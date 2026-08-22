@@ -176,21 +176,13 @@
 
   function draw() {
     context.clearRect(0, 0, WIDTH, HEIGHT);
-    const background = context.createLinearGradient(0, 0, 0, HEIGHT);
-    background.addColorStop(0, '#14213d');
-    background.addColorStop(1, '#080e1b');
-    context.fillStyle = background;
+    context.fillStyle = '#101a31';
     context.fillRect(0, 0, WIDTH, HEIGHT);
 
     context.strokeStyle = 'rgba(184,243,107,.055)';
     context.lineWidth = 1;
     for (let x = 0; x <= WIDTH; x += 40) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, HEIGHT); context.stroke(); }
     for (let y = 0; y <= HEIGHT; y += 40) { context.beginPath(); context.moveTo(0, y); context.lineTo(WIDTH, y); context.stroke(); }
-
-    context.fillStyle = 'rgba(165,144,255,.18)';
-    context.beginPath(); context.arc(90, 790, 110, 0, Math.PI * 2); context.fill();
-    context.fillStyle = 'rgba(184,243,107,.12)';
-    context.beginPath(); context.arc(650, 100, 85, 0, Math.PI * 2); context.fill();
 
     for (const brick of state.bricks) {
       if (!brick.alive) continue;
