@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Brick Loop</title>
+    <link rel="stylesheet" href="./game.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hud">
+        <div><span class="label">SCORE</span><strong id="score">0</strong></div>
+        <div class="center-title">BRICK <em>LOOP</em></div>
+        <div class="right-hud"><span class="label">BEST <b id="best">0</b></span><span class="label">LIVES <b id="lives">3</b></span></div>
+      </header>
+      <section class="canvas-wrap">
+        <canvas id="game" aria-label="Brick Loop 게임 화면"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="eyebrow">BREAK THE PATTERN</div>
+          <h1 id="overlay-title">BRICK<br /><em>LOOP</em></h1>
+          <p id="overlay-copy">공을 튕겨 모든 브릭을 부수세요.<br />패들이 공을 기다리고 있습니다.</p>
+          <button id="start-button" type="button">START</button>
+        </div>
+      </section>
+      <p class="hint">화면을 터치하거나 ← → 키로 패들 이동 · 스페이스로 시작</p>
+    </main>
+    <script src="./game.js"></script>
+  </body>
+</html>

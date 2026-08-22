@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Brick Loop</title>
+  <desc id="desc">A glowing paddle breaks a colorful brick pattern.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a4c" />
+      <stop offset="1" stop-color="#090f1d" />
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)" />
+  <g opacity=".13" stroke="#b8f36b"><path d="M0 190h1200M0 380h1200M0 570h1200M300 0v760M600 0v760M900 0v760" /></g>
+  <g filter="url(#glow)">
+    <rect x="130" y="145" width="130" height="34" rx="8" fill="#b8f36b"/><rect x="280" y="145" width="130" height="34" rx="8" fill="#a590ff"/><rect x="430" y="145" width="130" height="34" rx="8" fill="#74d8ff"/><rect x="580" y="145" width="130" height="34" rx="8" fill="#ff8bc9"/><rect x="730" y="145" width="130" height="34" rx="8" fill="#ffd166"/>
+    <rect x="205" y="205" width="130" height="34" rx="8" fill="#74d8ff"/><rect x="355" y="205" width="130" height="34" rx="8" fill="#ff8bc9"/><rect x="505" y="205" width="130" height="34" rx="8" fill="#b8f36b"/><rect x="655" y="205" width="130" height="34" rx="8" fill="#a590ff"/>
+  </g>
+  <circle cx="895" cy="500" r="18" fill="#b8f36b" filter="url(#glow)" />
+  <rect x="510" y="645" width="180" height="24" rx="12" fill="#fff" filter="url(#glow)" />
+  <text x="70" y="95" fill="#b8f36b" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="6">BREAK THE PATTERN</text>
+  <text x="70" y="420" fill="#fff" font-family="Arial, sans-serif" font-size="92" font-weight="900" letter-spacing="-5">BRICK</text>
+  <text x="70" y="510" fill="#b8f36b" font-family="Arial, sans-serif" font-size="92" font-weight="900" letter-spacing="-5">LOOP</text>
+</svg>
