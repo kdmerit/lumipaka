@@ -11,6 +11,8 @@
 
   const WIDTH = 960;
   const HEIGHT = 540;
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
   const paddle = { x: WIDTH / 2, y: HEIGHT - 42, width: 142, height: 14, speed: 720 };
   const ball = { x: WIDTH / 2, y: HEIGHT - 72, radius: 8, vx: 290, vy: -330, speed: 440 };
   const state = {

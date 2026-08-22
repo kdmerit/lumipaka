@@ -7,7 +7,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { width: 100%; min-width: 320px; min-height: 100%; margin: 0; }
+html, body { width: 100%; min-height: 100%; margin: 0; }
 body { display: grid; place-items: center; overflow-x: hidden; color: #f7f8ff; background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 .game-shell { width: min(100%, 1000px); padding: 18px 14px; }
 .hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 16px; padding: 0 5px 12px; }
@@ -40,4 +40,14 @@ button:hover { background: #d0fb9c; }
   h1 { margin: 7px 0 8px; font-size: clamp(32px, 12vw, 50px); }
   .overlay p { margin: 0; font-size: 11px; line-height: 1.35; }
   button { margin-top: 7px; padding: 10px 20px; }
+}
+
+@media (max-width: 300px) {
+  .game-shell { padding: 8px 6px; }
+  .hud { padding-bottom: 8px; }
+  .overlay { padding: 6px; }
+  .eyebrow { display: none; }
+  h1 { margin: 4px 0 5px; font-size: 28px; }
+  .overlay p { font-size: 10px; line-height: 1.2; }
+  button { margin-top: 4px; padding: 8px 16px; }
 }

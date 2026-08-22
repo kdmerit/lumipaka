@@ -107,6 +107,7 @@ function renderPlay(game) {
         src="${gameUrl}"
         allow="fullscreen; autoplay; gamepad"
         allowfullscreen
+        scrolling="no"
         sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
       ></iframe>
     </section>
@@ -115,6 +116,28 @@ function renderPlay(game) {
 
   const frame = document.querySelector('#game-frame');
   const fullscreenButton = document.querySelector('#fullscreen-button');
+  const applyFrameHeight = (value) => {
+    const height = Number(value);
+    if (!Number.isFinite(height) || height < 120 || height > 1600) return;
+    frame.style.height = `${Math.ceil(height)}px`;
+  };
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== frame.contentWindow) return;
+    const message = event.data;
+    if (message?.source !== 'lumipaka-game' || message.event !== 'frame-resize') return;
+    applyFrameHeight(message.payload?.height);
+  });
+
+  frame.addEventListener('load', () => {
+    try {
+      const root = frame.contentDocument?.querySelector('[data-lumipaka-size-root], .game-shell');
+      if (root) applyFrameHeight(Math.max(root.getBoundingClientRect().height, root.scrollHeight));
+    } catch {
+      // Cross-origin games use the postMessage bridge instead.
+    }
+  });
+
   fullscreenButton.addEventListener('click', () => {
     if (frame.requestFullscreen) {
       frame.requestFullscreen();

@@ -95,8 +95,8 @@ button { font: inherit; }
 .back-link span { color: var(--accent); margin-right: 5px; }
 .play-actions { display: flex; align-items: center; gap: 15px; }
 .play-toolbar + .ad-slot { margin: 0 0 18px; }
-.game-stage { width: 100%; min-height: 620px; display: grid; place-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #070b15; }
-.game-stage iframe { width: min(100%, 720px); height: 620px; border: 0; border-radius: 12px; background: #101827; }
+.game-stage { width: 100%; min-height: 0; display: grid; place-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #070b15; }
+.game-stage iframe { display: block; width: min(100%, 720px); height: 620px; border: 0; border-radius: 12px; background: #101827; }
 .game-stage.portrait iframe { width: min(100%, 420px); height: min(78vh, 760px); }
 .game-stage.landscape { min-height: 0; }
 .game-stage.landscape iframe { width: min(100%, 1000px); height: min(720px, calc(56.25vw + 85px)); }
@@ -115,7 +115,7 @@ button { font: inherit; }
   .detail-copy { padding: 0 8px 12px; }
   .info-grid { grid-template-columns: 1fr; }
   .site-footer { flex-direction: column; }
-  .game-stage { min-height: 500px; padding: 10px; }
+  .game-stage { min-height: 0; padding: 10px; }
   .game-stage iframe, .game-stage.portrait iframe { width: 100%; height: min(76vh, 650px); }
   .game-stage.landscape { min-height: 0; }
   .game-stage.landscape iframe { width: 100%; height: min(720px, calc(56.25vw + 85px)); }
