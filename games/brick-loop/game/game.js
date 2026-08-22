@@ -229,10 +229,13 @@
   }
 
   startButton.addEventListener('click', start);
-  overlay.addEventListener('pointerdown', (event) => {
+  const startFromSurface = (event) => {
     if (!state.active && event.target !== startButton) start();
-  });
+  };
+  overlay.addEventListener('pointerdown', startFromSurface);
+  overlay.addEventListener('click', startFromSurface);
   canvas.addEventListener('pointerdown', (event) => { canvas.setPointerCapture(event.pointerId); setPointer(event); });
+  canvas.addEventListener('click', () => { if (!state.active) start(); });
   canvas.addEventListener('pointermove', (event) => { if (event.buttons) setPointer(event); });
   window.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
