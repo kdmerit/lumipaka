@@ -229,6 +229,9 @@
   }
 
   startButton.addEventListener('click', start);
+  overlay.addEventListener('pointerdown', (event) => {
+    if (!state.active && event.target !== startButton) start();
+  });
   canvas.addEventListener('pointerdown', (event) => { canvas.setPointerCapture(event.pointerId); setPointer(event); });
   canvas.addEventListener('pointermove', (event) => { if (event.buttons) setPointer(event); });
   window.addEventListener('keydown', (event) => {

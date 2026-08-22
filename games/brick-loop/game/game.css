@@ -35,4 +35,9 @@ button:hover { background: #d0fb9c; }
   .hud { gap: 8px; }
   .center-title { font-size: 10px; }
   .hud strong { font-size: 21px; }
+  .overlay { padding: 10px; }
+  .eyebrow { font-size: 8px; }
+  h1 { margin: 7px 0 8px; font-size: clamp(32px, 12vw, 50px); }
+  .overlay p { margin: 0; font-size: 11px; line-height: 1.35; }
+  button { margin-top: 7px; padding: 10px 20px; }
 }
