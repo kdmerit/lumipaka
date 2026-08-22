@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-22T12:49:38.391Z",
+  "games": [
+    {
+      "slug": "dodge-loop",
+      "title": "Dodge Loop",
+      "description": "떨어지는 블록을 피하며 기록을 갱신하는 1분 생존 게임입니다.",
+      "category": "SURVIVAL",
+      "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
+      "gameUrl": "../games/dodge-loop/game/",
+      "orientation": "portrait",
+      "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
+      "published": true
+    }
+  ]
+}

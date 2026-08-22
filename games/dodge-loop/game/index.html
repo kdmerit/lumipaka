@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Dodge Loop</title>
+    <link rel="stylesheet" href="./game.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hud">
+        <div>
+          <span class="label">SCORE</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="best-wrap">
+          <span class="label">BEST</span>
+          <strong id="best">0</strong>
+        </div>
+      </header>
+      <section class="canvas-wrap">
+        <canvas id="game" aria-label="Dodge Loop 게임 화면"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="eyebrow">ONE MINUTE SURVIVAL</div>
+          <h1 id="overlay-title">DODGE<br /><em>LOOP</em></h1>
+          <p id="overlay-copy">떨어지는 블록을 피하고<br />최고 기록에 도전하세요.</p>
+          <button id="start-button" type="button">START</button>
+        </div>
+      </section>
+      <p class="hint">화면을 터치하거나 ← → 키로 이동</p>
+    </main>
+    <script src="./game.js"></script>
+  </body>
+</html>
