@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-22T13:54:09.446Z",
+  "generatedAt": "2026-08-22T14:01:16.957Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -8,8 +8,8 @@
       "description": "공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다.",
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-22T13%3A54%3A09.446Z",
-      "orientation": "landscape",
+      "gameUrl": "../games/brick-loop/game/?v=2026-08-22T14%3A01%3A16.957Z",
+      "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동",
       "published": true
     },
@@ -19,7 +19,7 @@
       "description": "떨어지는 블록을 피하며 기록을 갱신하는 1분 생존 게임입니다.",
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-22T13%3A54%3A09.446Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-08-22T14%3A01%3A16.957Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
       "published": true

@@ -9,12 +9,12 @@
   const bestElement = document.querySelector('#best');
   const livesElement = document.querySelector('#lives');
 
-  const WIDTH = 960;
-  const HEIGHT = 540;
+  const WIDTH = 720;
+  const HEIGHT = 960;
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
-  const paddle = { x: WIDTH / 2, y: HEIGHT - 42, width: 142, height: 14, speed: 720 };
-  const ball = { x: WIDTH / 2, y: HEIGHT - 72, radius: 8, vx: 290, vy: -330, speed: 440 };
+  const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: 150, height: 16, speed: 660 };
+  const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500 };
   const state = {
     active: false,
     waiting: 0,
@@ -39,17 +39,17 @@
 
   function makeBricks() {
     state.bricks = [];
-    const columns = 9;
-    const rows = Math.min(4 + state.level - 1, 6);
-    const width = 82;
-    const height = 24;
+    const columns = 7;
+    const rows = Math.min(5 + state.level - 1, 8);
+    const width = 80;
+    const height = 28;
     const gap = 10;
     const startX = (WIDTH - (columns * width + (columns - 1) * gap)) / 2;
     for (let row = 0; row < rows; row += 1) {
       for (let column = 0; column < columns; column += 1) {
         state.bricks.push({
           x: startX + column * (width + gap),
-          y: 62 + row * (height + gap),
+          y: 82 + row * (height + gap),
           width,
           height,
           color: colors[(row + state.level - 1) % colors.length],
@@ -61,11 +61,11 @@
 
   function resetBall() {
     ball.x = paddle.x;
-    ball.y = paddle.y - 28;
-    ball.speed = 440 + (state.level - 1) * 28;
+    ball.y = paddle.y - 34;
+    ball.speed = 500 + (state.level - 1) * 30;
     const direction = Math.random() > 0.5 ? 1 : -1;
-    ball.vx = direction * (210 + Math.random() * 80);
-    ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 260 * 260));
+    ball.vx = direction * (170 + Math.random() * 70);
+    ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 340 * 340));
     state.waiting = 0.8;
   }
 
@@ -128,7 +128,7 @@
     if (state.waiting > 0) {
       state.waiting -= delta;
       ball.x = paddle.x;
-      ball.y = paddle.y - 28;
+      ball.y = paddle.y - 34;
       return;
     }
 
@@ -149,7 +149,7 @@
       ball.y = paddle.y - ball.radius;
       const offset = (ball.x - paddle.x) / (paddle.width / 2);
       ball.vx = Math.max(-ball.speed * 0.92, Math.min(ball.speed * 0.92, offset * ball.speed * 0.95));
-      ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 260 * 260));
+      ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 340 * 340));
     }
 
     for (const brick of state.bricks) {
@@ -188,9 +188,9 @@
     for (let y = 0; y <= HEIGHT; y += 40) { context.beginPath(); context.moveTo(0, y); context.lineTo(WIDTH, y); context.stroke(); }
 
     context.fillStyle = 'rgba(165,144,255,.18)';
-    context.beginPath(); context.arc(120, 440, 100, 0, Math.PI * 2); context.fill();
+    context.beginPath(); context.arc(90, 790, 110, 0, Math.PI * 2); context.fill();
     context.fillStyle = 'rgba(184,243,107,.12)';
-    context.beginPath(); context.arc(840, 80, 75, 0, Math.PI * 2); context.fill();
+    context.beginPath(); context.arc(650, 100, 85, 0, Math.PI * 2); context.fill();
 
     for (const brick of state.bricks) {
       if (!brick.alive) continue;
