@@ -224,8 +224,19 @@
   }
 
   function setPointer(event) {
+    setPointerX(event.clientX);
+  }
+
+  function setPointerX(clientX) {
     const bounds = canvas.getBoundingClientRect();
-    state.pointerX = Math.max(paddle.width / 2, Math.min(WIDTH - paddle.width / 2, ((event.clientX - bounds.left) / bounds.width) * WIDTH));
+    state.pointerX = Math.max(paddle.width / 2, Math.min(WIDTH - paddle.width / 2, ((clientX - bounds.left) / bounds.width) * WIDTH));
+  }
+
+  function setTouchPointer(event) {
+    const touch = event.touches[0] || event.changedTouches[0];
+    if (!touch) return;
+    event.preventDefault();
+    setPointerX(touch.clientX);
   }
 
   startButton.addEventListener('click', start);
@@ -234,9 +245,21 @@
   };
   overlay.addEventListener('pointerdown', startFromSurface);
   overlay.addEventListener('click', startFromSurface);
-  canvas.addEventListener('pointerdown', (event) => { canvas.setPointerCapture(event.pointerId); setPointer(event); });
+  canvas.addEventListener('pointerdown', (event) => {
+    if (!state.active) start();
+    if (event.pointerType === 'touch') event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+    setPointer(event);
+  });
   canvas.addEventListener('click', () => { if (!state.active) start(); });
-  canvas.addEventListener('pointermove', (event) => { if (event.buttons) setPointer(event); });
+  canvas.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'touch' || event.buttons || event.pressure > 0) {
+      if (event.pointerType === 'touch') event.preventDefault();
+      setPointer(event);
+    }
+  });
+  canvas.addEventListener('touchstart', setTouchPointer, { passive: false });
+  canvas.addEventListener('touchmove', setTouchPointer, { passive: false });
   window.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
     if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') state.keys.right = true;

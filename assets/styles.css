@@ -98,7 +98,8 @@ button { font: inherit; }
 .game-stage { width: 100%; min-height: 620px; display: grid; place-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #070b15; }
 .game-stage iframe { width: min(100%, 720px); height: 620px; border: 0; border-radius: 12px; background: #101827; }
 .game-stage.portrait iframe { width: min(100%, 420px); height: min(78vh, 760px); }
-.game-stage.landscape iframe { width: min(100%, 1000px); height: min(62vh, 620px); }
+.game-stage.landscape { min-height: 0; }
+.game-stage.landscape iframe { width: min(100%, 1000px); height: auto; aspect-ratio: 16 / 9; max-height: 620px; }
 .play-note { margin: 13px 0 0; color: var(--muted); text-align: center; font-size: 12px; }
 .loading-card { padding: 40px; color: var(--muted); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); text-align: center; }
 
@@ -115,7 +116,9 @@ button { font: inherit; }
   .info-grid { grid-template-columns: 1fr; }
   .site-footer { flex-direction: column; }
   .game-stage { min-height: 500px; padding: 10px; }
-  .game-stage iframe, .game-stage.portrait iframe, .game-stage.landscape iframe { width: 100%; height: min(76vh, 650px); }
+  .game-stage iframe, .game-stage.portrait iframe { width: 100%; height: min(76vh, 650px); }
+  .game-stage.landscape { min-height: 0; }
+  .game-stage.landscape iframe { width: 100%; height: auto; aspect-ratio: 16 / 9; max-height: none; }
 }
 
 @media (max-width: 480px) {
