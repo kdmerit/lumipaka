@@ -33,7 +33,8 @@
   const MAX_BALL_SPEED = 750;
   const LIFE_LOSS_PAUSE = 0.9;
   const LEVEL_CLEAR_PAUSE = 5;
-  const ITEM_DROP_CHANCE = 0.3;
+  const ITEM_DROP_CHANCE = 0.1;
+  const ITEM_DROP_HEIGHT = 36;
   const SHIELD_Y = HEIGHT - 28;
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -258,7 +259,8 @@
       type: type.key,
       x: brick.x + brick.width / 2,
       y: brick.y + brick.height / 2,
-      size: 32,
+      width: paddle.width,
+      height: ITEM_DROP_HEIGHT,
       speed: 145
     });
   }
@@ -317,14 +319,14 @@
     for (const item of state.items) {
       item.y += item.speed * delta;
       const itemRect = {
-        x: item.x - item.size / 2,
-        y: item.y - item.size / 2,
-        width: item.size,
-        height: item.size
+        x: item.x - item.width / 2,
+        y: item.y - item.height / 2,
+        width: item.width,
+        height: item.height
       };
       if (rectsOverlap(itemRect, paddleRect)) {
         applyItem(item.type);
-      } else if (item.y - item.size / 2 <= HEIGHT) {
+      } else if (item.y - item.height / 2 <= HEIGHT) {
         remainingItems.push(item);
       }
     }
@@ -455,11 +457,11 @@
     context.shadowColor = type.color;
     context.shadowBlur = 18;
     context.beginPath();
-    context.roundRect(-item.size / 2, -item.size / 2, item.size, item.size, 8);
+    context.roundRect(-item.width / 2, -item.height / 2, item.width, item.height, 12);
     context.fill();
     context.shadowBlur = 0;
     context.fillStyle = '#101a31';
-    context.font = '900 11px Inter, ui-sans-serif, system-ui, sans-serif';
+    context.font = '900 15px Inter, ui-sans-serif, system-ui, sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(type.label, 0, 1);
