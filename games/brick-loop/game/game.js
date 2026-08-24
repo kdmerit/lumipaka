@@ -9,6 +9,8 @@
   const bestElement = document.querySelector('#best');
   const livesElement = document.querySelector('#lives');
   const pauseToggle = document.querySelector('#pause-toggle');
+  const pauseOverlay = document.querySelector('#pause-overlay');
+  const resumeButton = document.querySelector('#resume-button');
   const soundToggle = document.querySelector('#sound-toggle');
   const powerupsElement = document.querySelector('#powerups');
 
@@ -181,10 +183,11 @@
 
   function updatePauseToggle() {
     const paused = state.paused;
-    pauseToggle.disabled = !state.active;
-    pauseToggle.textContent = paused ? 'RESUME' : 'PAUSE';
+    pauseToggle.disabled = !state.active || paused;
+    pauseToggle.textContent = 'PAUSE';
     pauseToggle.setAttribute('aria-pressed', String(paused));
-    pauseToggle.setAttribute('aria-label', paused ? '게임 재개' : '게임 일시정지');
+    pauseToggle.setAttribute('aria-label', paused ? '게임이 일시정지됨' : '게임 일시정지');
+    pauseOverlay.hidden = !paused;
   }
 
   function pauseGameAudio() {
@@ -338,8 +341,11 @@
     state.level += 1;
     makeBricks();
     state.items = [];
-    if (!state.balls.length) state.balls = [ball];
-    state.balls.forEach(resetBall);
+    state.effects = { wide: 0, fire: 0, double: 0, shield: false };
+    state.powerupUiTimer = 0;
+    paddle.width = BASE_PADDLE_WIDTH;
+    state.balls = [ball];
+    resetBall(ball);
     updatePowerupStatus();
   }
 
@@ -650,20 +656,6 @@
     }
     context.shadowBlur = 0;
 
-    if (state.paused) {
-      context.save();
-      context.fillStyle = 'rgba(9,14,29,.76)';
-      context.fillRect(0, 0, WIDTH, HEIGHT);
-      context.fillStyle = '#b8f36b';
-      context.font = '900 48px Inter, ui-sans-serif, system-ui, sans-serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText('PAUSED', WIDTH / 2, HEIGHT / 2 - 18);
-      context.fillStyle = '#8794b2';
-      context.font = '700 18px Inter, ui-sans-serif, system-ui, sans-serif';
-      context.fillText('PAUSE 버튼을 눌러 계속하세요', WIDTH / 2, HEIGHT / 2 + 34);
-      context.restore();
-    }
   }
 
   function loop(time) {
@@ -693,6 +685,7 @@
 
   startButton.addEventListener('click', start);
   pauseToggle.addEventListener('click', togglePause);
+  resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   const startFromSurface = (event) => {
     if (!state.active && event.target !== startButton) start();

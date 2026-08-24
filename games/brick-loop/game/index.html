@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Brick Loop</title>
-    <link rel="stylesheet" href="./game.css?v=2026-08-24T13%3A56%3A35.100Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-08-24T14%3A09%3A03.641Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -28,11 +28,16 @@
           <p id="overlay-copy">공을 튕겨 모든 브릭을 부수세요.<br />패들이 공을 기다리고 있습니다.</p>
           <button id="start-button" type="button">START</button>
         </div>
+        <div class="pause-overlay" id="pause-overlay" hidden aria-live="polite">
+          <div class="pause-title">PAUSED</div>
+          <button class="resume-button" id="resume-button" type="button" aria-label="게임 재개">RESUME</button>
+          <p class="pause-copy">RESUME 버튼을 눌러 계속하세요</p>
+        </div>
       </section>
       <p class="hint">화면을 좌우로 드래그해 패들 이동 · PAUSE 버튼 또는 P / ESC로 일시정지</p>
       <p class="item-hint">아이템: W 패들 확대 · 3 멀티볼 · S 실드 · F 관통 · ×2 점수 · +1 라이프</p>
     </main>
-    <script src="./game.js?v=2026-08-24T13%3A56%3A35.100Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-08-24T13%3A56%3A35.100Z"></script>
+    <script src="./game.js?v=2026-08-24T14%3A09%3A03.641Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-08-24T14%3A09%3A03.641Z"></script>
 </body>
 </html>
