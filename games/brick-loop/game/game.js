@@ -12,18 +12,24 @@
   const powerupsElement = document.querySelector('#powerups');
 
   const audioTracks = {
-    hit: new Audio('./audio/brick-hit.wav'),
-    pickup: new Audio('./audio/item-pickup.wav'),
     death: new Audio('./audio/brick-loop-death.wav'),
     victory: new Audio('./audio/brick-loop-victory.wav'),
     gameOver: new Audio('./audio/brick-loop-game-over.wav')
   };
-  audioTracks.hit.volume = 0.18;
-  audioTracks.pickup.volume = 0.2;
   audioTracks.death.volume = 0.2;
   audioTracks.victory.volume = 0.26;
   audioTracks.gameOver.volume = 0.28;
   Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
+
+  const sfxDefinitions = {
+    hit: { url: './audio/brick-hit.wav', volume: 0.18 },
+    pickup: { url: './audio/item-pickup.wav', volume: 0.2 }
+  };
+  let sfxContext = null;
+  const sfxRawData = new Map();
+  const sfxBuffers = new Map();
+  const sfxDecoding = new Map();
+  const activeSfx = new Set();
 
   const WIDTH = 720;
   const HEIGHT = 960;
@@ -83,9 +89,79 @@
     track.currentTime = 0;
   }
 
+  function stopSfx() {
+    activeSfx.forEach((source) => {
+      try {
+        source.stop();
+      } catch (_) {
+        // The source may have already ended.
+      }
+    });
+    activeSfx.clear();
+  }
+
   function stopAllAudio() {
     Object.values(audioTracks).forEach(stopTrack);
+    stopSfx();
   }
+
+  function getSfxContext() {
+    if (sfxContext) return sfxContext;
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextConstructor) return null;
+    try {
+      sfxContext = new AudioContextConstructor({ latencyHint: 'interactive' });
+    } catch (_) {
+      sfxContext = new AudioContextConstructor();
+    }
+    return sfxContext;
+  }
+
+  function decodeSfx(name) {
+    const context = getSfxContext();
+    const rawData = sfxRawData.get(name);
+    if (!context || !rawData || sfxBuffers.has(name) || sfxDecoding.has(name)) return;
+    const decoding = context.decodeAudioData(rawData.slice(0))
+      .then((buffer) => { sfxBuffers.set(name, buffer); })
+      .catch(() => {})
+      .finally(() => { sfxDecoding.delete(name); });
+    sfxDecoding.set(name, decoding);
+  }
+
+  function warmSfx() {
+    const context = getSfxContext();
+    if (!context) return;
+    if (context.state === 'suspended') context.resume().catch(() => {});
+    Object.keys(sfxDefinitions).forEach(decodeSfx);
+  }
+
+  function playSfx(name) {
+    if (!state.soundEnabled) return;
+    const context = getSfxContext();
+    const buffer = sfxBuffers.get(name);
+    if (!context || !buffer || context.state !== 'running') {
+      warmSfx();
+      return;
+    }
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    gain.gain.value = sfxDefinitions[name].volume;
+    source.connect(gain).connect(context.destination);
+    source.onended = () => { activeSfx.delete(source); };
+    activeSfx.add(source);
+    source.start();
+  }
+
+  Object.entries(sfxDefinitions).forEach(([name, definition]) => {
+    fetch(definition.url)
+      .then((response) => response.ok ? response.arrayBuffer() : Promise.reject())
+      .then((rawData) => {
+        sfxRawData.set(name, rawData);
+        if (sfxContext) decodeSfx(name);
+      })
+      .catch(() => {});
+  });
 
   function playTrack(track, restart = true) {
     if (!state.soundEnabled) return;
@@ -107,7 +183,10 @@
     updateSoundToggle();
     if (!enabled) {
       stopAllAudio();
-    } else if (state.active) {
+      return;
+    }
+    warmSfx();
+    if (state.active) {
       if (state.victoryPause > 0) playTrack(audioTracks.victory, false);
       if (state.deathPause > 0) playTrack(audioTracks.death, false);
     }
@@ -179,6 +258,7 @@
 
   function start() {
     stopAllAudio();
+    warmSfx();
     resetGame();
     state.active = true;
     overlay.classList.add('hidden');
@@ -288,7 +368,7 @@
   function applyItem(typeKey) {
     const type = itemTypeMap[typeKey];
     if (!type) return;
-    playTrack(audioTracks.pickup);
+    playSfx('pickup');
     if (type.key === 'wide') state.effects.wide = type.duration;
     if (type.key === 'multi') addMultiBalls();
     if (type.key === 'shield') state.effects.shield = true;
@@ -411,7 +491,7 @@
         const offset = (currentBall.x - paddle.x) / (paddle.width / 2);
         currentBall.vx = Math.max(-currentBall.speed * 0.92, Math.min(currentBall.speed * 0.92, offset * currentBall.speed * 0.95));
         currentBall.vy = -Math.sqrt(Math.max(currentBall.speed * currentBall.speed - currentBall.vx * currentBall.vx, 340 * 340));
-        playTrack(audioTracks.hit);
+        playSfx('hit');
       }
 
       for (const brick of state.bricks) {
@@ -421,7 +501,7 @@
         scoreElement.textContent = String(Math.floor(state.score));
         maybeDropItem(brick);
         if (state.effects.fire <= 0) currentBall.vy *= -1;
-        playTrack(audioTracks.hit);
+        playSfx('hit');
         break;
       }
 
@@ -429,7 +509,7 @@
         currentBall.y = SHIELD_Y - currentBall.radius;
         currentBall.vy = -Math.abs(currentBall.vy);
         state.effects.shield = false;
-        playTrack(audioTracks.hit);
+        playSfx('hit');
         updatePowerupStatus();
       }
 
