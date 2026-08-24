@@ -1,27 +1,31 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T11:23:55.441Z",
+  "generatedAt": "2026-08-24T13:02:36.931Z",
   "games": [
     {
       "slug": "brick-loop",
       "title": "Brick Loop",
-      "description": "공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다.",
+      "description": "공을 튕겨 브릭을 부수고, 떨어지는 파워업을 받아 멀티볼과 실드 효과를 활용하는 반응형 아케이드 게임입니다.",
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T11%3A23%3A55.441Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T13%3A02%3A36.931Z",
       "orientation": "portrait",
-      "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동",
-      "howToPlay": "패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 공의 각도와 패들의 위치를 조절하면 다음 루프까지 이어갈 수 있습니다.",
+      "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동 · 떨어지는 아이템은 패들로 받기",
+      "howToPlay": "패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 브릭에서 떨어지는 WIDE, MULTI, SHIELD, FIRE, DOUBLE, LIFE 아이템을 패들로 받으면 플레이에 도움이 되는 효과를 얻습니다.",
       "rules": [
         "공이 아래로 떨어지기 전에 패들로 받아내야 합니다.",
         "브릭을 하나 부술 때마다 점수를 얻고, 모든 브릭을 부수면 다음 루프에 도전합니다.",
+        "브릭을 부수면 일정 확률로 아이템이 떨어지며, 아이템을 놓쳐도 목숨은 줄지 않습니다.",
+        "WIDE는 패들을 넓히고, MULTI는 공을 늘리며, SHIELD는 한 번의 낙하를 막습니다.",
+        "FIRE는 공이 브릭을 관통하게 하고, DOUBLE은 점수를 두 배로 하며, LIFE는 목숨을 하나 회복합니다.",
         "공을 놓치면 목숨을 잃으며, 목숨이 모두 사라지면 게임이 끝납니다."
       ],
       "tips": [
         "패들의 중앙만 고집하기보다 공이 오는 방향으로 미리 이동하세요.",
         "패들의 가장자리로 공을 받아 반사 각도를 바꾸면 옆 브릭을 공략하기 쉽습니다.",
-        "브릭 사이의 빈 공간을 통과한 공의 다음 경로를 보고 한 박자 먼저 움직이세요."
+        "브릭 사이의 빈 공간을 통과한 공의 다음 경로를 보고 한 박자 먼저 움직이세요.",
+        "효과가 활성화되면 게임 상단 POWER-UPS 표시에서 남은 효과와 시간을 확인하세요."
       ],
       "credits": "LUMIPAKA 오리지널 HTML5 아케이드 게임 · 별도 설치 없이 플레이",
       "updatedAt": "2026-08-24",
@@ -34,7 +38,7 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T11%3A23%3A55.441Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T13%3A02%3A36.931Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
       "howToPlay": "패들을 좌우로 움직여 위에서 떨어지는 블록을 피하세요. 시간이 지날수록 패턴이 빨라지므로 안전한 공간을 찾으며 1분 생존 기록을 갱신하는 게임입니다.",

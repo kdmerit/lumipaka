@@ -9,23 +9,35 @@
   const bestElement = document.querySelector('#best');
   const livesElement = document.querySelector('#lives');
   const soundToggle = document.querySelector('#sound-toggle');
+  const powerupsElement = document.querySelector('#powerups');
 
   const audioTracks = {
-    bgm: new Audio('./audio/brick-loop-bgm.wav'),
     hit: new Audio('./audio/brick-hit.wav'),
+    pickup: new Audio('./audio/item-pickup.wav'),
+    death: new Audio('./audio/brick-loop-death.wav'),
+    victory: new Audio('./audio/brick-loop-victory.wav'),
     gameOver: new Audio('./audio/brick-loop-game-over.wav')
   };
-  audioTracks.bgm.loop = true;
-  audioTracks.bgm.volume = 0.22;
   audioTracks.hit.volume = 0.18;
+  audioTracks.pickup.volume = 0.2;
+  audioTracks.death.volume = 0.2;
+  audioTracks.victory.volume = 0.26;
   audioTracks.gameOver.volume = 0.28;
   Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const WIDTH = 720;
   const HEIGHT = 960;
+  const BASE_PADDLE_WIDTH = 150;
+  const BASE_BALL_SPEED = 500;
+  const LEVEL_SPEED_STEP = 25;
+  const MAX_BALL_SPEED = 750;
+  const LIFE_LOSS_PAUSE = 0.9;
+  const LEVEL_CLEAR_PAUSE = 5;
+  const ITEM_DROP_CHANCE = 0.3;
+  const SHIELD_Y = HEIGHT - 28;
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
-  const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: 150, height: 16, speed: 660 };
+  const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: BASE_PADDLE_WIDTH, height: 16, speed: 660 };
   const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500 };
   const state = {
     active: false,
@@ -38,10 +50,25 @@
     pointerX: null,
     soundEnabled: localStorage.getItem('brick-loop-sound') !== 'off',
     keys: { left: false, right: false },
-    bricks: []
+    bricks: [],
+    items: [],
+    balls: [ball],
+    effects: { wide: 0, fire: 0, double: 0, shield: false },
+    powerupUiTimer: 0,
+    deathPause: 0,
+    victoryPause: 0
   };
 
   const colors = ['#b8f36b', '#a590ff', '#74d8ff', '#ff8bc9', '#ffd166'];
+  const itemTypes = [
+    { key: 'wide', label: 'W', name: 'WIDE', color: '#b8f36b', duration: 10, weight: 30 },
+    { key: 'multi', label: '3', name: 'MULTI', color: '#a590ff', weight: 20 },
+    { key: 'shield', label: 'S', name: 'SHIELD', color: '#74d8ff', weight: 20 },
+    { key: 'fire', label: 'F', name: 'FIRE', color: '#ff9f43', duration: 6, weight: 12 },
+    { key: 'double', label: '×2', name: 'DOUBLE', color: '#ffd166', duration: 10, weight: 12 },
+    { key: 'life', label: '+1', name: 'LIFE', color: '#ff8bc9', weight: 6 }
+  ];
+  const itemTypeMap = Object.fromEntries(itemTypes.map((item) => [item.key, item]));
   bestElement.textContent = String(state.best);
 
   function emit(event, payload = {}) {
@@ -80,8 +107,20 @@
     if (!enabled) {
       stopAllAudio();
     } else if (state.active) {
-      playTrack(audioTracks.bgm, false);
+      if (state.victoryPause > 0) playTrack(audioTracks.victory, false);
+      if (state.deathPause > 0) playTrack(audioTracks.death, false);
     }
+  }
+
+  function updatePowerupStatus() {
+    const active = [];
+    if (state.effects.wide > 0) active.push(`WIDE ${Math.ceil(state.effects.wide)}s`);
+    if (state.balls.length > 1) active.push(`MULTI ×${state.balls.length}`);
+    if (state.effects.shield) active.push('SHIELD');
+    if (state.effects.fire > 0) active.push(`FIRE ${Math.ceil(state.effects.fire)}s`);
+    if (state.effects.double > 0) active.push(`DOUBLE ${Math.ceil(state.effects.double)}s`);
+    powerupsElement.textContent = active.length ? active.join(' · ') : 'POWER-UPS —';
+    powerupsElement.classList.toggle('active', active.length > 0);
   }
 
   function makeBricks() {
@@ -106,14 +145,14 @@
     }
   }
 
-  function resetBall() {
-    ball.x = paddle.x;
-    ball.y = paddle.y - 34;
-    ball.speed = 500 + (state.level - 1) * 30;
+  function resetBall(targetBall = ball, waitingDuration = 0.8) {
+    targetBall.x = paddle.x;
+    targetBall.y = paddle.y - 34;
+    targetBall.speed = Math.min(BASE_BALL_SPEED + (state.level - 1) * LEVEL_SPEED_STEP, MAX_BALL_SPEED);
     const direction = Math.random() > 0.5 ? 1 : -1;
-    ball.vx = direction * (170 + Math.random() * 70);
-    ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 340 * 340));
-    state.waiting = 0.8;
+    targetBall.vx = direction * (170 + Math.random() * 70);
+    targetBall.vy = -Math.sqrt(Math.max(targetBall.speed * targetBall.speed - targetBall.vx * targetBall.vx, 340 * 340));
+    state.waiting = waitingDuration;
   }
 
   function resetGame() {
@@ -122,11 +161,19 @@
     state.level = 1;
     state.lastTime = 0;
     state.pointerX = null;
+    state.items = [];
+    state.balls = [ball];
+    state.effects = { wide: 0, fire: 0, double: 0, shield: false };
+    state.powerupUiTimer = 0;
+    state.deathPause = 0;
+    state.victoryPause = 0;
+    paddle.width = BASE_PADDLE_WIDTH;
     paddle.x = WIDTH / 2;
     livesElement.textContent = String(state.lives);
     scoreElement.textContent = '0';
     makeBricks();
     resetBall();
+    updatePowerupStatus();
   }
 
   function start() {
@@ -134,14 +181,13 @@
     resetGame();
     state.active = true;
     overlay.classList.add('hidden');
-    playTrack(audioTracks.bgm);
     emit('game-start');
     requestAnimationFrame(loop);
   }
 
   function gameOver() {
     state.active = false;
-    stopTrack(audioTracks.bgm);
+    stopAllAudio();
     playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
     if (score > state.best) {
@@ -149,6 +195,11 @@
       localStorage.setItem('brick-loop-best', String(score));
       bestElement.textContent = String(score);
     }
+    state.items = [];
+    state.balls = [ball];
+    state.effects = { wide: 0, fire: 0, double: 0, shield: false };
+    paddle.width = BASE_PADDLE_WIDTH;
+    updatePowerupStatus();
     overlayTitle.innerHTML = 'LOOP<br /><em>OVER</em>';
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점 · 레벨 ${state.level}<br />부서진 패턴을 다시 시작해보세요.`;
     startButton.textContent = 'RESTART';
@@ -157,9 +208,22 @@
   }
 
   function nextLevel() {
+    stopTrack(audioTracks.victory);
     state.level += 1;
     makeBricks();
-    resetBall();
+    state.items = [];
+    if (!state.balls.length) state.balls = [ball];
+    state.balls.forEach(resetBall);
+    updatePowerupStatus();
+  }
+
+  function beginLevelClear() {
+    state.victoryPause = LEVEL_CLEAR_PAUSE;
+    state.waiting = 0;
+    state.items = [];
+    stopAllAudio();
+    playTrack(audioTracks.victory);
+    emit('level-clear', { level: state.level, score: Math.floor(state.score) });
   }
 
   function circleIntersectsRect(circle, rect) {
@@ -170,61 +234,236 @@
     return dx * dx + dy * dy < circle.radius * circle.radius;
   }
 
+  function rectsOverlap(first, second) {
+    return first.x < second.x + second.width
+      && first.x + first.width > second.x
+      && first.y < second.y + second.height
+      && first.y + first.height > second.y;
+  }
+
+  function pickItemType() {
+    const totalWeight = itemTypes.reduce((total, item) => total + item.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const item of itemTypes) {
+      roll -= item.weight;
+      if (roll <= 0) return item;
+    }
+    return itemTypes[0];
+  }
+
+  function maybeDropItem(brick) {
+    if (Math.random() >= ITEM_DROP_CHANCE) return;
+    const type = pickItemType();
+    state.items.push({
+      type: type.key,
+      x: brick.x + brick.width / 2,
+      y: brick.y + brick.height / 2,
+      size: 32,
+      speed: 145
+    });
+  }
+
+  function addMultiBalls() {
+    if (state.balls.length >= 3) return;
+    const source = state.balls[0] || ball;
+    const speed = source.speed || 500;
+    const baseAngle = Math.atan2(source.vy || -1, source.vx || 0);
+    const offsets = state.balls.length === 1 ? [-0.34, 0.34] : [0.42];
+    for (const offset of offsets) {
+      if (state.balls.length >= 3) break;
+      const angle = baseAngle + offset;
+      state.balls.push({
+        x: source.x,
+        y: source.y,
+        radius: source.radius,
+        speed,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed
+      });
+    }
+  }
+
+  function applyItem(typeKey) {
+    const type = itemTypeMap[typeKey];
+    if (!type) return;
+    playTrack(audioTracks.pickup);
+    if (type.key === 'wide') state.effects.wide = type.duration;
+    if (type.key === 'multi') addMultiBalls();
+    if (type.key === 'shield') state.effects.shield = true;
+    if (type.key === 'fire') state.effects.fire = type.duration;
+    if (type.key === 'double') state.effects.double = type.duration;
+    if (type.key === 'life') {
+      state.lives = Math.min(5, state.lives + 1);
+      livesElement.textContent = String(state.lives);
+    }
+    updatePowerupStatus();
+    emit('item-collected', { type: type.key, name: type.name });
+  }
+
+  function updateEffects(delta) {
+    ['wide', 'fire', 'double'].forEach((key) => {
+      if (state.effects[key] > 0) state.effects[key] = Math.max(0, state.effects[key] - delta);
+    });
+    paddle.width = state.effects.wide > 0 ? BASE_PADDLE_WIDTH * 1.45 : BASE_PADDLE_WIDTH;
+    state.powerupUiTimer -= delta;
+    if (state.powerupUiTimer <= 0) {
+      updatePowerupStatus();
+      state.powerupUiTimer = 0.2;
+    }
+  }
+
+  function updateItems(delta, paddleRect) {
+    const remainingItems = [];
+    for (const item of state.items) {
+      item.y += item.speed * delta;
+      const itemRect = {
+        x: item.x - item.size / 2,
+        y: item.y - item.size / 2,
+        width: item.size,
+        height: item.size
+      };
+      if (rectsOverlap(itemRect, paddleRect)) {
+        applyItem(item.type);
+      } else if (item.y - item.size / 2 <= HEIGHT) {
+        remainingItems.push(item);
+      }
+    }
+    state.items = remainingItems;
+  }
+
+  function beginLifeLoss(missedBall) {
+    state.lives -= 1;
+    livesElement.textContent = String(state.lives);
+    if (state.lives <= 0) {
+      gameOver();
+      return;
+    }
+
+    state.items = [];
+    state.deathPause = LIFE_LOSS_PAUSE;
+    state.victoryPause = 0;
+    state.waiting = 0;
+    state.balls = [ball];
+    ball.x = Math.max(ball.radius, Math.min(WIDTH - ball.radius, missedBall.x));
+    ball.y = HEIGHT - ball.radius - 4;
+    ball.vx = 0;
+    ball.vy = 0;
+    stopAllAudio();
+    playTrack(audioTracks.death);
+    emit('life-lost', { lives: state.lives });
+  }
+
   function update(delta) {
+    if (state.victoryPause > 0) {
+      state.victoryPause = Math.max(0, state.victoryPause - delta);
+      if (state.victoryPause === 0) {
+        nextLevel();
+      }
+      return;
+    }
+
+    if (state.deathPause > 0) {
+      state.deathPause = Math.max(0, state.deathPause - delta);
+      if (state.deathPause === 0) {
+        resetBall(ball, 0.45);
+        stopTrack(audioTracks.death);
+      }
+      return;
+    }
+
+    updateEffects(delta);
     const direction = Number(state.keys.right) - Number(state.keys.left);
     if (direction !== 0) paddle.x += direction * paddle.speed * delta;
     if (state.pointerX !== null) paddle.x += (state.pointerX - paddle.x) * Math.min(delta * 12, 1);
     paddle.x = Math.max(paddle.width / 2, Math.min(WIDTH - paddle.width / 2, paddle.x));
 
+    const paddleRect = { x: paddle.x - paddle.width / 2, y: paddle.y, width: paddle.width, height: paddle.height };
     if (state.waiting > 0) {
       state.waiting -= delta;
-      ball.x = paddle.x;
-      ball.y = paddle.y - 34;
+      state.balls.forEach((currentBall) => {
+        currentBall.x = paddle.x;
+        currentBall.y = paddle.y - 34;
+      });
+      updateItems(delta, paddleRect);
       return;
     }
 
-    ball.x += ball.vx * delta;
-    ball.y += ball.vy * delta;
+    updateItems(delta, paddleRect);
+    const survivingBalls = [];
+    let lastMissedBall = null;
+    for (const currentBall of state.balls) {
+      currentBall.x += currentBall.vx * delta;
+      currentBall.y += currentBall.vy * delta;
 
-    if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= WIDTH) {
-      ball.x = Math.max(ball.radius, Math.min(WIDTH - ball.radius, ball.x));
-      ball.vx *= -1;
-    }
-    if (ball.y - ball.radius <= 0) {
-      ball.y = ball.radius;
-      ball.vy = Math.abs(ball.vy);
-    }
-
-    const paddleRect = { x: paddle.x - paddle.width / 2, y: paddle.y, width: paddle.width, height: paddle.height };
-    if (ball.vy > 0 && circleIntersectsRect(ball, paddleRect)) {
-      ball.y = paddle.y - ball.radius;
-      const offset = (ball.x - paddle.x) / (paddle.width / 2);
-      ball.vx = Math.max(-ball.speed * 0.92, Math.min(ball.speed * 0.92, offset * ball.speed * 0.95));
-      ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 340 * 340));
-      playTrack(audioTracks.hit);
-    }
-
-    for (const brick of state.bricks) {
-      if (!brick.alive || !circleIntersectsRect(ball, brick)) continue;
-      brick.alive = false;
-      state.score += 10 * state.level;
-      scoreElement.textContent = String(Math.floor(state.score));
-      ball.vy *= -1;
-      playTrack(audioTracks.hit);
-      break;
-    }
-
-    if (state.bricks.every((brick) => !brick.alive)) nextLevel();
-
-    if (ball.y - ball.radius > HEIGHT) {
-      state.lives -= 1;
-      livesElement.textContent = String(state.lives);
-      if (state.lives <= 0) {
-        gameOver();
-      } else {
-        resetBall();
+      if (currentBall.x - currentBall.radius <= 0 || currentBall.x + currentBall.radius >= WIDTH) {
+        currentBall.x = Math.max(currentBall.radius, Math.min(WIDTH - currentBall.radius, currentBall.x));
+        currentBall.vx *= -1;
       }
+      if (currentBall.y - currentBall.radius <= 0) {
+        currentBall.y = currentBall.radius;
+        currentBall.vy = Math.abs(currentBall.vy);
+      }
+
+      if (currentBall.vy > 0 && circleIntersectsRect(currentBall, paddleRect)) {
+        currentBall.y = paddle.y - currentBall.radius;
+        const offset = (currentBall.x - paddle.x) / (paddle.width / 2);
+        currentBall.vx = Math.max(-currentBall.speed * 0.92, Math.min(currentBall.speed * 0.92, offset * currentBall.speed * 0.95));
+        currentBall.vy = -Math.sqrt(Math.max(currentBall.speed * currentBall.speed - currentBall.vx * currentBall.vx, 340 * 340));
+        playTrack(audioTracks.hit);
+      }
+
+      for (const brick of state.bricks) {
+        if (!brick.alive || !circleIntersectsRect(currentBall, brick)) continue;
+        brick.alive = false;
+        state.score += 10 * state.level * (state.effects.double > 0 ? 2 : 1);
+        scoreElement.textContent = String(Math.floor(state.score));
+        maybeDropItem(brick);
+        if (state.effects.fire <= 0) currentBall.vy *= -1;
+        playTrack(audioTracks.hit);
+        break;
+      }
+
+      if (currentBall.vy > 0 && state.effects.shield && currentBall.y + currentBall.radius >= SHIELD_Y) {
+        currentBall.y = SHIELD_Y - currentBall.radius;
+        currentBall.vy = -Math.abs(currentBall.vy);
+        state.effects.shield = false;
+        playTrack(audioTracks.hit);
+        updatePowerupStatus();
+      }
+
+      if (currentBall.y - currentBall.radius <= HEIGHT) survivingBalls.push(currentBall);
+      else lastMissedBall = currentBall;
     }
+
+    state.balls = survivingBalls;
+    if (state.bricks.every((brick) => !brick.alive)) {
+      beginLevelClear();
+      return;
+    }
+
+    if (!state.balls.length) {
+      beginLifeLoss(lastMissedBall || ball);
+    }
+  }
+
+  function drawItem(item) {
+    const type = itemTypeMap[item.type];
+    if (!type) return;
+    context.save();
+    context.translate(item.x, item.y);
+    context.fillStyle = type.color;
+    context.shadowColor = type.color;
+    context.shadowBlur = 18;
+    context.beginPath();
+    context.roundRect(-item.size / 2, -item.size / 2, item.size, item.size, 8);
+    context.fill();
+    context.shadowBlur = 0;
+    context.fillStyle = '#101a31';
+    context.font = '900 11px Inter, ui-sans-serif, system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(type.label, 0, 1);
+    context.restore();
   }
 
   function draw() {
@@ -250,14 +489,38 @@
       context.fillRect(brick.x + 10, brick.y + 5, brick.width - 20, 2);
     }
 
+    for (const item of state.items) drawItem(item);
+
+    if (state.effects.shield) {
+      context.save();
+      context.strokeStyle = '#74d8ff';
+      context.shadowColor = '#74d8ff';
+      context.shadowBlur = 18;
+      context.lineWidth = 5;
+      context.beginPath();
+      context.moveTo(18, SHIELD_Y);
+      context.lineTo(WIDTH - 18, SHIELD_Y);
+      context.stroke();
+      context.restore();
+    }
+
     context.fillStyle = '#ffffff';
     context.shadowColor = '#ffffff';
     context.shadowBlur = 20;
     context.beginPath();
     context.roundRect(paddle.x - paddle.width / 2, paddle.y, paddle.width, paddle.height, 7);
     context.fill();
-    context.fillStyle = '#b8f36b';
-    context.beginPath(); context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); context.fill();
+    context.shadowBlur = 0;
+
+    for (const currentBall of state.balls) {
+      const fireActive = state.effects.fire > 0;
+      context.fillStyle = fireActive ? '#ff9f43' : '#b8f36b';
+      context.shadowColor = fireActive ? '#ff9f43' : '#b8f36b';
+      context.shadowBlur = fireActive ? 24 : 18;
+      context.beginPath();
+      context.arc(currentBall.x, currentBall.y, currentBall.radius, 0, Math.PI * 2);
+      context.fill();
+    }
     context.shadowBlur = 0;
   }
 
@@ -320,5 +583,6 @@
 
   makeBricks();
   updateSoundToggle();
+  updatePowerupStatus();
   draw();
 })();

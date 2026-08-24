@@ -18,7 +18,9 @@ body { display: grid; place-items: center; overflow-x: hidden; color: #f7f8ff; b
 .hud strong { color: var(--lime); font-size: 25px; line-height: 1; }
 .center-title { color: #f7f8ff; font-size: 12px; font-weight: 900; letter-spacing: .16em; }
 .center-title em { color: var(--lime); font-style: normal; }
-.game-tools { display: flex; justify-content: flex-end; margin: -4px 0 8px; }
+.game-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 8px; }
+.powerup-status { min-width: 0; overflow: hidden; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
+.powerup-status.active { color: var(--lime); }
 .sound-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
 .sound-toggle:hover { color: #17210e; background: var(--lime); }
 .sound-toggle[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
@@ -34,11 +36,13 @@ h1 em { color: var(--lime); font-style: normal; }
 button { margin-top: 12px; padding: 13px 25px; border: 0; border-radius: 9px; color: #17210e; background: var(--lime); cursor: pointer; font: inherit; font-size: 12px; font-weight: 900; letter-spacing: .15em; }
 button:hover { background: #d0fb9c; }
 .hint { margin: 12px 0 0; color: var(--muted); text-align: center; font-size: 10px; }
+.item-hint { margin: 6px 0 0; color: rgba(135,148,178,.78); text-align: center; font-size: 9px; line-height: 1.5; }
 
 @media (max-width: 560px) {
   .game-shell { padding: 12px 8px; }
   .hud { gap: 8px; }
   .game-tools { margin-top: -2px; }
+  .powerup-status { font-size: 8px; letter-spacing: .06em; }
   .center-title { font-size: 10px; }
   .hud strong { font-size: 21px; }
   .overlay { padding: 10px; }
@@ -56,4 +60,5 @@ button:hover { background: #d0fb9c; }
   h1 { margin: 4px 0 5px; font-size: 28px; }
   .overlay p { font-size: 10px; line-height: 1.2; }
   button { margin-top: 4px; padding: 8px 16px; }
+  .item-hint { font-size: 8px; }
 }
