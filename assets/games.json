@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T08:13:38.513Z",
+  "generatedAt": "2026-08-24T08:15:28.689Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -9,7 +9,7 @@
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A13%3A38.513Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A15%3A28.689Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동",
       "published": true
@@ -21,7 +21,7 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A13%3A38.513Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A15%3A28.689Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
       "published": true
