@@ -4,8 +4,65 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0d1324" />
+    <meta name="description" content="Brick Loop 플레이 화면. 공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다. 모바일과 PC 브라우저에서 별도 설치 없이 바로 플레이할 수 있습니다." />
+    <meta name="robots" content="noindex,follow" />
+    <link rel="canonical" href="https://kdmerit.github.io/lumipaka/games/brick-loop/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LUMIPAKA" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:title" content="Brick Loop 플레이 · LUMIPAKA" />
+    <meta property="og:description" content="Brick Loop 플레이 화면. 공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다. 모바일과 PC 브라우저에서 별도 설치 없이 바로 플레이할 수 있습니다." />
+    <meta property="og:url" content="https://kdmerit.github.io/lumipaka/games/brick-loop/" />
+    <meta property="og:image" content="https://kdmerit.github.io/lumipaka/games/brick-loop/game/thumbnail.svg" />
+    <meta property="og:image:alt" content="Brick Loop 플레이 · LUMIPAKA" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Brick Loop 플레이 · LUMIPAKA" />
+    <meta name="twitter:description" content="Brick Loop 플레이 화면. 공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다. 모바일과 PC 브라우저에서 별도 설치 없이 바로 플레이할 수 있습니다." />
     <title>Brick Loop 플레이 · LUMIPAKA</title>
-    <link rel="stylesheet" href="../../../assets/styles.css?v=2026-08-22T14%3A24%3A13.871Z" />
+    <link rel="stylesheet" href="../../../assets/styles.css?v=2026-08-24T08%3A13%3A38.513Z" />
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "VideoGame",
+      "@id": "https://kdmerit.github.io/lumipaka/games/brick-loop/#game",
+      "name": "Brick Loop",
+      "description": "공을 튕겨 모든 브릭을 부수고 다음 루프에 도전하는 아케이드 게임입니다.",
+      "url": "https://kdmerit.github.io/lumipaka/games/brick-loop/",
+      "image": "https://kdmerit.github.io/lumipaka/games/brick-loop/game/thumbnail.svg",
+      "genre": "ARCADE",
+      "applicationCategory": "Game",
+      "gamePlatform": [
+        "Web Browser",
+        "Mobile Web Browser"
+      ],
+      "operatingSystem": "Web Browser",
+      "inLanguage": "ko",
+      "publisher": {
+        "@type": "Organization",
+        "name": "LUMIPAKA",
+        "url": "https://kdmerit.github.io/lumipaka/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "LUMIPAKA",
+          "item": "https://kdmerit.github.io/lumipaka/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Brick Loop",
+          "item": "https://kdmerit.github.io/lumipaka/games/brick-loop/"
+        }
+      ]
+    }
+  ]
+}</script>
   </head>
   <body
     data-page="play"
@@ -21,14 +78,33 @@
     </header>
 
     <main id="app" class="page-shell" aria-live="polite">
-      <div class="loading-card">게임 목록을 불러오는 중입니다.</div>
-    </main>
+    <div class="play-toolbar">
+      <a class="back-link" href="../"><span aria-hidden="true">←</span> Brick Loop 정보</a>
+      <div class="play-actions">
+        <span class="orientation-label">portrait</span>
+        <button class="ghost-button" type="button" id="fullscreen-button">전체화면</button>
+      </div>
+    </div>
+    <div class="ad-slot" aria-label="플레이 화면 배너 광고 슬롯"><span>플레이 화면 배너 광고 슬롯</span></div>
+    <section class="game-stage portrait">
+      <iframe
+        id="game-frame"
+        title="Brick Loop 플레이 화면"
+        src="../game/?v=2026-08-24T08%3A13%3A38.513Z"
+        allow="fullscreen; autoplay; gamepad"
+        allowfullscreen
+        scrolling="no"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
+      ></iframe>
+    </section>
+    <p class="play-note">게임 화면을 눌러 시작하세요. 브라우저 전체화면을 사용할 수 있습니다.</p>
+  </main>
 
     <footer class="site-footer">
       <span>LUMIPAKA · HTML5 games</span>
       <span>게임은 브라우저에서 바로 실행됩니다.</span>
     </footer>
 
-    <script type="module" src="../../../assets/app.js?v=2026-08-22T14%3A24%3A13.871Z"></script>
+    <script type="module" src="../../../assets/app.js?v=2026-08-24T08%3A13%3A38.513Z"></script>
   </body>
 </html>
