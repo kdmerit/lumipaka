@@ -21,6 +21,36 @@ function adSlot(label = '광고 영역') {
   return `<div class="ad-slot" aria-label="${escapeHtml(label)}"><span>${escapeHtml(label)}</span></div>`;
 }
 
+function listMarkup(items, fallback) {
+  const values = Array.isArray(items) && items.length ? items : [fallback];
+  return values.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+}
+
+function gameGuide(game) {
+  return `
+    <section class="game-guide" aria-labelledby="game-guide-title">
+      <div class="guide-card guide-intro">
+        <div class="eyebrow">PLAY GUIDE</div>
+        <h2 id="game-guide-title">게임 플레이 가이드</h2>
+        <p>${escapeHtml(game.howToPlay || '화면의 안내에 따라 게임을 플레이하세요.')}</p>
+      </div>
+      <div class="guide-grid">
+        <article class="guide-card">
+          <div class="eyebrow">RULES</div>
+          <h3>게임 규칙</h3>
+          <ul>${listMarkup(game.rules, '게임 화면의 안내에 따라 플레이하세요.')}</ul>
+        </article>
+        <article class="guide-card">
+          <div class="eyebrow">TIPS</div>
+          <h3>플레이 팁</h3>
+          <ul>${listMarkup(game.tips, '게임의 움직임을 먼저 익혀보세요.')}</ul>
+        </article>
+      </div>
+      <p class="game-credit">${escapeHtml(game.credits || 'LUMIPAKA 오리지널 HTML5 게임')}</p>
+    </section>
+  `;
+}
+
 function gameCard(game) {
   const thumbnail = resolveFromCatalog(game.thumbnail);
   return `
@@ -84,6 +114,7 @@ function renderDetail(catalog, game) {
       <div class="info-card"><span class="eyebrow">HOW TO PLAY</span><h2>조작 방법</h2><p>${escapeHtml(game.controls || '화면의 안내에 따라 조작하세요.')}</p></div>
       <div class="info-card"><span class="eyebrow">ABOUT</span><h2>게임 정보</h2><p>이 게임은 별도 설치 없이 모바일과 PC 브라우저에서 플레이할 수 있습니다.</p></div>
     </section>
+    ${gameGuide(game)}
     ${adSlot('상세 페이지 배너 광고 슬롯')}
   `;
 }
@@ -158,25 +189,27 @@ async function loadCatalog() {
   return response.json();
 }
 
-loadCatalog()
-  .then((catalog) => {
-    if (page === 'home') {
-      renderHome(catalog);
-      return;
-    }
+if (page !== 'static') {
+  loadCatalog()
+    .then((catalog) => {
+      if (page === 'home') {
+        renderHome(catalog);
+        return;
+      }
 
-    const game = (catalog.games || []).find((item) => item.slug === gameSlug);
-    if (!game) {
-      renderError('존재하지 않거나 공개되지 않은 게임입니다.');
-      return;
-    }
+      const game = (catalog.games || []).find((item) => item.slug === gameSlug);
+      if (!game) {
+        renderError('존재하지 않거나 공개되지 않은 게임입니다.');
+        return;
+      }
 
-    if (page === 'detail') {
-      renderDetail(catalog, game);
-    } else if (page === 'play') {
-      renderPlay(game);
-    } else {
-      renderError('알 수 없는 페이지입니다.');
-    }
-  })
-  .catch((error) => renderError(error.message));
+      if (page === 'detail') {
+        renderDetail(catalog, game);
+      } else if (page === 'play') {
+        renderPlay(game);
+      } else {
+        renderError('알 수 없는 페이지입니다.');
+      }
+    })
+    .catch((error) => renderError(error.message));
+}

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T08:15:28.689Z",
+  "generatedAt": "2026-08-24T08:25:32.254Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -9,9 +9,22 @@
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A15%3A28.689Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A25%3A32.254Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동",
+      "howToPlay": "패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 공의 각도와 패들의 위치를 조절하면 다음 루프까지 이어갈 수 있습니다.",
+      "rules": [
+        "공이 아래로 떨어지기 전에 패들로 받아내야 합니다.",
+        "브릭을 하나 부술 때마다 점수를 얻고, 모든 브릭을 부수면 다음 루프에 도전합니다.",
+        "공을 놓치면 목숨을 잃으며, 목숨이 모두 사라지면 게임이 끝납니다."
+      ],
+      "tips": [
+        "패들의 중앙만 고집하기보다 공이 오는 방향으로 미리 이동하세요.",
+        "패들의 가장자리로 공을 받아 반사 각도를 바꾸면 옆 브릭을 공략하기 쉽습니다.",
+        "브릭 사이의 빈 공간을 통과한 공의 다음 경로를 보고 한 박자 먼저 움직이세요."
+      ],
+      "credits": "LUMIPAKA 오리지널 HTML5 아케이드 게임 · 별도 설치 없이 플레이",
+      "updatedAt": "2026-08-24",
       "published": true
     },
     {
@@ -21,9 +34,22 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A15%3A28.689Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A25%3A32.254Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
+      "howToPlay": "패들을 좌우로 움직여 위에서 떨어지는 블록을 피하세요. 시간이 지날수록 패턴이 빨라지므로 안전한 공간을 찾으며 1분 생존 기록을 갱신하는 게임입니다.",
+      "rules": [
+        "패들을 좌우로 이동해 떨어지는 블록과 충돌하지 않아야 합니다.",
+        "생존 시간이 길어질수록 점수가 올라가고 장애물의 움직임이 빨라집니다.",
+        "블록에 부딪히면 라운드가 끝나며, 최고 점수는 같은 브라우저에 기록됩니다."
+      ],
+      "tips": [
+        "화면 한쪽 끝에 고정하기보다 다음 블록이 없는 쪽으로 여유 있게 이동하세요.",
+        "떨어지는 블록의 간격을 먼저 보고 짧은 이동을 여러 번 나누어 입력하세요.",
+        "속도가 빨라질수록 패들보다 블록의 다음 위치를 먼저 보는 것이 중요합니다."
+      ],
+      "credits": "LUMIPAKA 오리지널 HTML5 생존 게임 · 별도 설치 없이 플레이",
+      "updatedAt": "2026-08-24",
       "published": true
     }
   ]
