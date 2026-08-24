@@ -19,12 +19,16 @@ body { display: grid; place-items: center; overflow-x: hidden; color: #f7f8ff; b
 .center-title { color: #f7f8ff; font-size: 12px; font-weight: 900; letter-spacing: .16em; }
 .center-title em { color: var(--lime); font-style: normal; }
 .game-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 8px; }
+.tool-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
 .powerup-status { min-width: 0; overflow: hidden; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
 .powerup-status.active { color: var(--lime); }
-.sound-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
-.sound-toggle:hover { color: #17210e; background: var(--lime); }
+.sound-toggle, .pause-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
+.sound-toggle:hover, .pause-toggle:hover { color: #17210e; background: var(--lime); }
 .sound-toggle[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .sound-toggle[aria-pressed="false"]:hover { color: #f7f8ff; background: rgba(255,255,255,.08); }
+.pause-toggle[aria-pressed="true"] { color: #17210e; background: var(--lime); }
+.pause-toggle:disabled { cursor: default; opacity: .45; }
+.pause-toggle:disabled:hover { color: var(--lime); background: rgba(184,243,107,.08); }
 .canvas-wrap { position: relative; overflow: hidden; aspect-ratio: 3 / 4; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; background: var(--field); box-shadow: 0 25px 80px rgba(0,0,0,.3); }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; }
 .overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; padding: 25px; text-align: center; background: rgba(9,14,29,.78); }

@@ -7,9 +7,11 @@
   const startButton = document.querySelector('#start-button');
   const scoreElement = document.querySelector('#score');
   const bestElement = document.querySelector('#best');
+  const pauseToggle = document.querySelector('#pause-toggle');
 
   const state = {
     active: false,
+    paused: false,
     score: 0,
     best: Number(localStorage.getItem('dodge-loop-best') || 0),
     lastTime: 0,
@@ -40,6 +42,7 @@
   function height() { return canvas.getBoundingClientRect().height; }
 
   function reset() {
+    state.paused = false;
     state.score = 0;
     state.spawnTimer = 0;
     state.lastTime = 0;
@@ -52,6 +55,7 @@
   function start() {
     reset();
     state.active = true;
+    updatePauseToggle();
     overlay.classList.add('hidden');
     emit('game-start');
     requestAnimationFrame(loop);
@@ -59,6 +63,7 @@
 
   function gameOver() {
     state.active = false;
+    state.paused = false;
     const score = Math.floor(state.score);
     if (score > state.best) {
       state.best = score;
@@ -69,7 +74,29 @@
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점<br />다시 한 번 도전해보세요.`;
     startButton.textContent = 'RESTART';
     overlay.classList.remove('hidden');
+    updatePauseToggle();
     emit('game-over', { score });
+  }
+
+  function updatePauseToggle() {
+    const paused = state.paused;
+    pauseToggle.disabled = !state.active;
+    pauseToggle.textContent = paused ? 'RESUME' : 'PAUSE';
+    pauseToggle.setAttribute('aria-pressed', String(paused));
+    pauseToggle.setAttribute('aria-label', paused ? '게임 재개' : '게임 일시정지');
+  }
+
+  function togglePause() {
+    if (!state.active) return;
+    state.paused = !state.paused;
+    state.keys.left = false;
+    state.keys.right = false;
+    state.pointerX = null;
+    state.lastTime = 0;
+    updatePauseToggle();
+    draw();
+    if (!state.paused) requestAnimationFrame(loop);
+    emit('game-pause', { paused: state.paused });
   }
 
   function spawnBlock() {
@@ -154,15 +181,30 @@
     context.shadowBlur = 18;
     context.fillRect(playerX, playerY, playerWidth, playerHeight);
     context.shadowBlur = 0;
+
+    if (state.paused) {
+      context.save();
+      context.fillStyle = 'rgba(9,14,29,.76)';
+      context.fillRect(0, 0, canvasWidth, canvasHeight);
+      context.fillStyle = '#b8f36b';
+      context.font = '900 32px Inter, ui-sans-serif, system-ui, sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText('PAUSED', canvasWidth / 2, canvasHeight / 2 - 16);
+      context.fillStyle = '#8794b2';
+      context.font = '700 13px Inter, ui-sans-serif, system-ui, sans-serif';
+      context.fillText('PAUSE 버튼을 눌러 계속하세요', canvasWidth / 2, canvasHeight / 2 + 22);
+      context.restore();
+    }
   }
 
   function loop(time) {
-    if (!state.active) return;
+    if (!state.active || state.paused) return;
     const delta = state.lastTime ? Math.min(time - state.lastTime, 50) : 16;
     state.lastTime = time;
     update(delta);
     draw();
-    if (state.active) requestAnimationFrame(loop);
+    if (state.active && !state.paused) requestAnimationFrame(loop);
   }
 
   function setPointer(event) {
@@ -171,13 +213,33 @@
   }
 
   startButton.addEventListener('click', start);
-  canvas.addEventListener('pointerdown', (event) => { canvas.setPointerCapture(event.pointerId); setPointer(event); });
-  canvas.addEventListener('pointermove', (event) => { if (event.buttons) setPointer(event); });
+  pauseToggle.addEventListener('click', togglePause);
+  canvas.addEventListener('pointerdown', (event) => {
+    if (state.paused) return;
+    canvas.setPointerCapture(event.pointerId);
+    setPointer(event);
+  });
+  canvas.addEventListener('pointermove', (event) => { if (!state.paused && event.buttons) setPointer(event); });
   canvas.addEventListener('pointerup', () => { state.pointerX = null; });
   window.addEventListener('keydown', (event) => {
+    if (!event.repeat && (event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
+      if (state.active) {
+        event.preventDefault();
+        togglePause();
+      }
+      return;
+    }
+    if (event.key === ' ' && state.paused) {
+      event.preventDefault();
+      togglePause();
+      return;
+    }
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
     if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') state.keys.right = true;
-    if (event.key === ' ' && !state.active) start();
+    if (event.key === ' ' && !state.active) {
+      event.preventDefault();
+      start();
+    }
   });
   window.addEventListener('keyup', (event) => {
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = false;
@@ -185,5 +247,6 @@
   });
   window.addEventListener('resize', resize);
   resize();
+  updatePauseToggle();
   draw();
 })();

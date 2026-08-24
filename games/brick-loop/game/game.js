@@ -8,6 +8,7 @@
   const scoreElement = document.querySelector('#score');
   const bestElement = document.querySelector('#best');
   const livesElement = document.querySelector('#lives');
+  const pauseToggle = document.querySelector('#pause-toggle');
   const soundToggle = document.querySelector('#sound-toggle');
   const powerupsElement = document.querySelector('#powerups');
 
@@ -48,6 +49,7 @@
   const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500 };
   const state = {
     active: false,
+    paused: false,
     waiting: 0,
     score: 0,
     best: Number(localStorage.getItem('brick-loop-best') || 0),
@@ -136,7 +138,7 @@
   }
 
   function playSfx(name) {
-    if (!state.soundEnabled) return;
+    if (!state.soundEnabled || state.paused) return;
     const context = getSfxContext();
     const buffer = sfxBuffers.get(name);
     if (!context || !buffer || context.state !== 'running') {
@@ -177,6 +179,44 @@
     soundToggle.setAttribute('aria-label', enabled ? '게임 사운드 끄기' : '게임 사운드 켜기');
   }
 
+  function updatePauseToggle() {
+    const paused = state.paused;
+    pauseToggle.disabled = !state.active;
+    pauseToggle.textContent = paused ? 'RESUME' : 'PAUSE';
+    pauseToggle.setAttribute('aria-pressed', String(paused));
+    pauseToggle.setAttribute('aria-label', paused ? '게임 재개' : '게임 일시정지');
+  }
+
+  function pauseGameAudio() {
+    Object.values(audioTracks).forEach((track) => track.pause());
+    if (sfxContext && sfxContext.state === 'running') sfxContext.suspend().catch(() => {});
+  }
+
+  function resumeGameAudio() {
+    if (!state.soundEnabled) return;
+    warmSfx();
+    if (state.victoryPause > 0) playTrack(audioTracks.victory, false);
+    if (state.deathPause > 0) playTrack(audioTracks.death, false);
+  }
+
+  function togglePause() {
+    if (!state.active) return;
+    state.paused = !state.paused;
+    state.keys.left = false;
+    state.keys.right = false;
+    state.pointerX = null;
+    if (state.paused) {
+      pauseGameAudio();
+    } else {
+      state.lastTime = 0;
+      resumeGameAudio();
+      requestAnimationFrame(loop);
+    }
+    updatePauseToggle();
+    draw();
+    emit('game-pause', { paused: state.paused });
+  }
+
   function setSoundEnabled(enabled) {
     state.soundEnabled = enabled;
     localStorage.setItem('brick-loop-sound', enabled ? 'on' : 'off');
@@ -185,6 +225,7 @@
       stopAllAudio();
       return;
     }
+    if (state.paused) return;
     warmSfx();
     if (state.active) {
       if (state.victoryPause > 0) playTrack(audioTracks.victory, false);
@@ -236,6 +277,7 @@
   }
 
   function resetGame() {
+    state.paused = false;
     state.score = 0;
     state.lives = 3;
     state.level = 1;
@@ -261,6 +303,7 @@
     warmSfx();
     resetGame();
     state.active = true;
+    updatePauseToggle();
     overlay.classList.add('hidden');
     emit('game-start');
     requestAnimationFrame(loop);
@@ -268,6 +311,7 @@
 
   function gameOver() {
     state.active = false;
+    state.paused = false;
     stopAllAudio();
     playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
@@ -281,6 +325,7 @@
     state.effects = { wide: 0, fire: 0, double: 0, shield: false };
     paddle.width = BASE_PADDLE_WIDTH;
     updatePowerupStatus();
+    updatePauseToggle();
     overlayTitle.innerHTML = 'LOOP<br /><em>OVER</em>';
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점 · 레벨 ${state.level}<br />부서진 패턴을 다시 시작해보세요.`;
     startButton.textContent = 'RESTART';
@@ -604,15 +649,30 @@
       context.fill();
     }
     context.shadowBlur = 0;
+
+    if (state.paused) {
+      context.save();
+      context.fillStyle = 'rgba(9,14,29,.76)';
+      context.fillRect(0, 0, WIDTH, HEIGHT);
+      context.fillStyle = '#b8f36b';
+      context.font = '900 48px Inter, ui-sans-serif, system-ui, sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText('PAUSED', WIDTH / 2, HEIGHT / 2 - 18);
+      context.fillStyle = '#8794b2';
+      context.font = '700 18px Inter, ui-sans-serif, system-ui, sans-serif';
+      context.fillText('PAUSE 버튼을 눌러 계속하세요', WIDTH / 2, HEIGHT / 2 + 34);
+      context.restore();
+    }
   }
 
   function loop(time) {
-    if (!state.active) return;
+    if (!state.active || state.paused) return;
     const delta = state.lastTime ? Math.min((time - state.lastTime) / 1000, 0.04) : 0.016;
     state.lastTime = time;
     update(delta);
     draw();
-    if (state.active) requestAnimationFrame(loop);
+    if (state.active && !state.paused) requestAnimationFrame(loop);
   }
 
   function setPointer(event) {
@@ -632,6 +692,7 @@
   }
 
   startButton.addEventListener('click', start);
+  pauseToggle.addEventListener('click', togglePause);
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   const startFromSurface = (event) => {
     if (!state.active && event.target !== startButton) start();
@@ -639,6 +700,7 @@
   overlay.addEventListener('pointerdown', startFromSurface);
   overlay.addEventListener('click', startFromSurface);
   canvas.addEventListener('pointerdown', (event) => {
+    if (state.paused) return;
     if (!state.active) start();
     if (event.pointerType === 'touch') event.preventDefault();
     canvas.setPointerCapture(event.pointerId);
@@ -646,17 +708,33 @@
   });
   canvas.addEventListener('click', () => { if (!state.active) start(); });
   canvas.addEventListener('pointermove', (event) => {
+    if (state.paused) return;
     if (event.pointerType === 'touch' || event.buttons || event.pressure > 0) {
       if (event.pointerType === 'touch') event.preventDefault();
       setPointer(event);
     }
   });
-  canvas.addEventListener('touchstart', setTouchPointer, { passive: false });
-  canvas.addEventListener('touchmove', setTouchPointer, { passive: false });
+  canvas.addEventListener('touchstart', (event) => { if (!state.paused) setTouchPointer(event); }, { passive: false });
+  canvas.addEventListener('touchmove', (event) => { if (!state.paused) setTouchPointer(event); }, { passive: false });
   window.addEventListener('keydown', (event) => {
+    if (!event.repeat && (event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
+      if (state.active) {
+        event.preventDefault();
+        togglePause();
+      }
+      return;
+    }
+    if (event.key === ' ' && state.paused) {
+      event.preventDefault();
+      togglePause();
+      return;
+    }
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
     if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') state.keys.right = true;
-    if (event.key === ' ' && !state.active) start();
+    if (event.key === ' ' && !state.active) {
+      event.preventDefault();
+      start();
+    }
   });
   window.addEventListener('keyup', (event) => {
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = false;
@@ -665,6 +743,7 @@
 
   makeBricks();
   updateSoundToggle();
+  updatePauseToggle();
   updatePowerupStatus();
   draw();
 })();

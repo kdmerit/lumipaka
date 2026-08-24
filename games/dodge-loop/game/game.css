@@ -16,6 +16,11 @@ body { display: grid; place-items: center; overflow: hidden; color: #f7f8ff; bac
 .hud .best-wrap { align-items: end; }
 .label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
 .hud strong { color: var(--lime); font-size: 25px; line-height: 1; }
+.game-tools { display: flex; justify-content: flex-end; margin: -4px 5px 8px; }
+.pause-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
+.pause-toggle:hover, .pause-toggle[aria-pressed="true"] { color: #17210e; background: var(--lime); }
+.pause-toggle:disabled { cursor: default; opacity: .45; }
+.pause-toggle:disabled:hover { color: var(--lime); background: rgba(184,243,107,.08); }
 .canvas-wrap { position: relative; overflow: hidden; aspect-ratio: 0.72; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; background: linear-gradient(180deg, #101a31, #0a1020); box-shadow: 0 25px 80px rgba(0,0,0,.3); }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; padding: 30px; text-align: center; background: linear-gradient(180deg, rgba(10,15,30,.18), rgba(10,15,30,.88)); }
