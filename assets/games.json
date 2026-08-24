@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T08:25:32.254Z",
+  "generatedAt": "2026-08-24T08:39:09.939Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -9,7 +9,7 @@
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A25%3A32.254Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-08-24T08%3A39%3A09.939Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동",
       "howToPlay": "패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 공의 각도와 패들의 위치를 조절하면 다음 루프까지 이어갈 수 있습니다.",
@@ -34,7 +34,7 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A25%3A32.254Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-08-24T08%3A39%3A09.939Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동",
       "howToPlay": "패들을 좌우로 움직여 위에서 떨어지는 블록을 피하세요. 시간이 지날수록 패턴이 빨라지므로 안전한 공간을 찾으며 1분 생존 기록을 갱신하는 게임입니다.",

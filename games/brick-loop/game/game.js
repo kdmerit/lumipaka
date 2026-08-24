@@ -8,6 +8,18 @@
   const scoreElement = document.querySelector('#score');
   const bestElement = document.querySelector('#best');
   const livesElement = document.querySelector('#lives');
+  const soundToggle = document.querySelector('#sound-toggle');
+
+  const audioTracks = {
+    bgm: new Audio('./audio/brick-loop-bgm.wav'),
+    hit: new Audio('./audio/brick-hit.wav'),
+    gameOver: new Audio('./audio/brick-loop-game-over.wav')
+  };
+  audioTracks.bgm.loop = true;
+  audioTracks.bgm.volume = 0.22;
+  audioTracks.hit.volume = 0.34;
+  audioTracks.gameOver.volume = 0.42;
+  Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const WIDTH = 720;
   const HEIGHT = 960;
@@ -24,6 +36,7 @@
     level: 1,
     lastTime: 0,
     pointerX: null,
+    soundEnabled: localStorage.getItem('brick-loop-sound') !== 'off',
     keys: { left: false, right: false },
     bricks: []
   };
@@ -34,6 +47,40 @@
   function emit(event, payload = {}) {
     if (window.parent !== window) {
       window.parent.postMessage({ source: 'lumipaka-game', event, payload }, '*');
+    }
+  }
+
+  function stopTrack(track) {
+    track.pause();
+    track.currentTime = 0;
+  }
+
+  function stopAllAudio() {
+    Object.values(audioTracks).forEach(stopTrack);
+  }
+
+  function playTrack(track, restart = true) {
+    if (!state.soundEnabled) return;
+    if (restart) track.currentTime = 0;
+    const playback = track.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => {});
+  }
+
+  function updateSoundToggle() {
+    const enabled = state.soundEnabled;
+    soundToggle.textContent = enabled ? 'SOUND ON' : 'SOUND OFF';
+    soundToggle.setAttribute('aria-pressed', String(enabled));
+    soundToggle.setAttribute('aria-label', enabled ? '게임 사운드 끄기' : '게임 사운드 켜기');
+  }
+
+  function setSoundEnabled(enabled) {
+    state.soundEnabled = enabled;
+    localStorage.setItem('brick-loop-sound', enabled ? 'on' : 'off');
+    updateSoundToggle();
+    if (!enabled) {
+      stopAllAudio();
+    } else if (state.active) {
+      playTrack(audioTracks.bgm, false);
     }
   }
 
@@ -83,15 +130,19 @@
   }
 
   function start() {
+    stopAllAudio();
     resetGame();
     state.active = true;
     overlay.classList.add('hidden');
+    playTrack(audioTracks.bgm);
     emit('game-start');
     requestAnimationFrame(loop);
   }
 
   function gameOver() {
     state.active = false;
+    stopTrack(audioTracks.bgm);
+    playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
     if (score > state.best) {
       state.best = score;
@@ -150,6 +201,7 @@
       const offset = (ball.x - paddle.x) / (paddle.width / 2);
       ball.vx = Math.max(-ball.speed * 0.92, Math.min(ball.speed * 0.92, offset * ball.speed * 0.95));
       ball.vy = -Math.sqrt(Math.max(ball.speed * ball.speed - ball.vx * ball.vx, 340 * 340));
+      playTrack(audioTracks.hit);
     }
 
     for (const brick of state.bricks) {
@@ -158,6 +210,7 @@
       state.score += 10 * state.level;
       scoreElement.textContent = String(Math.floor(state.score));
       ball.vy *= -1;
+      playTrack(audioTracks.hit);
       break;
     }
 
@@ -234,6 +287,7 @@
   }
 
   startButton.addEventListener('click', start);
+  soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   const startFromSurface = (event) => {
     if (!state.active && event.target !== startButton) start();
   };
@@ -265,5 +319,6 @@
   });
 
   makeBricks();
+  updateSoundToggle();
   draw();
 })();
