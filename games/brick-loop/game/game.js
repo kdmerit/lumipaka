@@ -17,8 +17,8 @@
   };
   audioTracks.bgm.loop = true;
   audioTracks.bgm.volume = 0.22;
-  audioTracks.hit.volume = 0.34;
-  audioTracks.gameOver.volume = 0.42;
+  audioTracks.hit.volume = 0.18;
+  audioTracks.gameOver.volume = 0.28;
   Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const WIDTH = 720;
