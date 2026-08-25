@@ -14,11 +14,11 @@
 
   const audioTracks = {
     bgm: new Audio('./audio/dodge-loop-mystery-01-veiled-observatory.wav'),
-    death: new Audio('./audio/dodge-loop-death.wav?v=01d7e489b09a41891cf1d789a925b0c51ebd1308c2f6f08eb184c7aabc133f67')
+    death: new Audio('./audio/dodge-loop-death.wav?v=e45cabe325e50746657d4b9df3b3567ad21808a897d7652188fac4abf08dc5ed')
   };
   audioTracks.bgm.loop = true;
   audioTracks.bgm.volume = 1;
-  audioTracks.death.volume = 0.2;
+  audioTracks.death.volume = 0.38;
   Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const state = {
