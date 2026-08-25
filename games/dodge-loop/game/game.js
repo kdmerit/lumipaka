@@ -10,12 +10,23 @@
   const pauseToggle = document.querySelector('#pause-toggle');
   const pauseOverlay = document.querySelector('#pause-overlay');
   const resumeButton = document.querySelector('#resume-button');
+  const soundToggle = document.querySelector('#sound-toggle');
+
+  const audioTracks = {
+    bgm: new Audio('./audio/dodge-loop-adventure-05-forest-sprint.wav'),
+    death: new Audio('./audio/dodge-loop-death.wav')
+  };
+  audioTracks.bgm.loop = true;
+  audioTracks.bgm.volume = 1;
+  audioTracks.death.volume = 0.2;
+  Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const state = {
     active: false,
     paused: false,
     score: 0,
     best: Number(localStorage.getItem('dodge-loop-best') || 0),
+    soundEnabled: localStorage.getItem('dodge-loop-sound') !== 'off',
     lastTime: 0,
     spawnTimer: 0,
     pointerX: null,
@@ -30,6 +41,49 @@
     if (window.parent !== window) {
       window.parent.postMessage({ source: 'lumipaka-game', event, payload }, '*');
     }
+  }
+
+  function stopTrack(track) {
+    track.pause();
+    track.currentTime = 0;
+  }
+
+  function stopAllAudio() {
+    Object.values(audioTracks).forEach(stopTrack);
+  }
+
+  function playTrack(track, restart = true) {
+    if (!state.soundEnabled) return;
+    if (restart) track.currentTime = 0;
+    const playback = track.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => {});
+  }
+
+  function updateSoundToggle() {
+    const enabled = state.soundEnabled;
+    soundToggle.textContent = enabled ? 'SOUND ON' : 'SOUND OFF';
+    soundToggle.setAttribute('aria-pressed', String(enabled));
+    soundToggle.setAttribute('aria-label', enabled ? '게임 사운드 끄기' : '게임 사운드 켜기');
+  }
+
+  function pauseGameAudio() {
+    Object.values(audioTracks).forEach((track) => track.pause());
+  }
+
+  function resumeGameAudio() {
+    if (!state.soundEnabled || !state.active) return;
+    playTrack(audioTracks.bgm, false);
+  }
+
+  function setSoundEnabled(enabled) {
+    state.soundEnabled = enabled;
+    localStorage.setItem('dodge-loop-sound', enabled ? 'on' : 'off');
+    updateSoundToggle();
+    if (!enabled) {
+      stopAllAudio();
+      return;
+    }
+    if (state.active && !state.paused) playTrack(audioTracks.bgm);
   }
 
   function resize() {
@@ -55,17 +109,22 @@
   }
 
   function start() {
+    stopAllAudio();
     reset();
     state.active = true;
     updatePauseToggle();
     overlay.classList.add('hidden');
+    playTrack(audioTracks.bgm);
     emit('game-start');
     requestAnimationFrame(loop);
   }
 
   function gameOver() {
+    if (!state.active) return;
     state.active = false;
     state.paused = false;
+    stopAllAudio();
+    playTrack(audioTracks.death);
     const score = Math.floor(state.score);
     if (score > state.best) {
       state.best = score;
@@ -96,6 +155,8 @@
     state.keys.right = false;
     state.pointerX = null;
     state.lastTime = 0;
+    if (state.paused) pauseGameAudio();
+    else resumeGameAudio();
     updatePauseToggle();
     draw();
     if (!state.paused) requestAnimationFrame(loop);
@@ -138,9 +199,11 @@
       const blockBottom = block.y + block.size / 2;
       if (blockRight > playerLeft && blockLeft < playerRight && blockBottom > playerTop && blockTop < playerBottom) {
         gameOver();
+        return false;
       }
       return block.y < 1.12;
     });
+    if (!state.active) return;
     state.score += delta / 100;
     scoreElement.textContent = String(Math.floor(state.score));
   }
@@ -204,6 +267,7 @@
   startButton.addEventListener('click', start);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
+  soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   canvas.addEventListener('pointerdown', (event) => {
     if (state.paused) return;
     canvas.setPointerCapture(event.pointerId);
@@ -237,6 +301,7 @@
   });
   window.addEventListener('resize', resize);
   resize();
+  updateSoundToggle();
   updatePauseToggle();
   draw();
 })();
