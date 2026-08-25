@@ -13,7 +13,7 @@
   const soundToggle = document.querySelector('#sound-toggle');
 
   const audioTracks = {
-    bgm: new Audio('./audio/dodge-loop-adventure-05-forest-sprint.wav'),
+    bgm: new Audio('./audio/dodge-loop-mystery-01-veiled-observatory.wav'),
     death: new Audio('./audio/dodge-loop-death.wav')
   };
   audioTracks.bgm.loop = true;
