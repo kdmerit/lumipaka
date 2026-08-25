@@ -14,7 +14,7 @@
 
   const audioTracks = {
     bgm: new Audio('./audio/dodge-loop-mystery-01-veiled-observatory.wav'),
-    death: new Audio('./audio/dodge-loop-death.wav')
+    death: new Audio('./audio/dodge-loop-death.wav?v=01d7e489b09a41891cf1d789a925b0c51ebd1308c2f6f08eb184c7aabc133f67')
   };
   audioTracks.bgm.loop = true;
   audioTracks.bgm.volume = 1;
