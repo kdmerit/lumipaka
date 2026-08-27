@@ -4,24 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Smash Rally</title>
-    <link rel="stylesheet" href="./game.css?v=2026-08-27T05%3A49%3A34.472Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-08-27T06%3A15%3A22.701Z" />
   </head>
   <body>
     <main class="game-shell">
-      <header class="hud" aria-label="현재 점수">
+      <header class="hud" aria-label="현재 점수와 목표 점수">
         <div class="score-block player-score"><span class="label">PLAYER</span><strong id="player-score">0</strong></div>
-        <div class="center-title">SMASH <em>RALLY</em></div>
+        <div class="score-block target-score"><span class="label">TARGET</span><strong id="target-score">10</strong><span class="deuce-slot"><span class="deuce-status" id="deuce-status" hidden>DEUCE</span></span></div>
         <div class="score-block cpu-score"><span class="label">CPU</span><strong id="cpu-score">0</strong></div>
       </header>
-
-      <div class="game-tools">
-        <div class="match-status" id="match-status" aria-live="polite">10 POINTS · DEUCE ON · NORMAL</div>
-        <div class="tool-actions">
-          <button class="serve-toggle" id="serve-button" type="button" disabled>SERVE</button>
-          <button class="pause-toggle" id="pause-toggle" type="button" aria-pressed="false" aria-label="게임 일시정지" disabled>PAUSE</button>
-          <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="게임 사운드 끄기">SOUND ON</button>
-        </div>
-      </div>
 
       <section class="canvas-wrap">
         <canvas id="game" width="720" height="960" aria-label="Smash Rally 게임 화면"></canvas>
@@ -78,9 +69,17 @@
         </section>
       </section>
 
+      <div class="game-tools" aria-label="게임 조작">
+        <div class="tool-actions">
+          <button class="serve-toggle" id="serve-button" type="button" disabled>SERVE</button>
+          <button class="pause-toggle" id="pause-toggle" type="button" aria-pressed="false" aria-label="게임 일시정지" disabled>PAUSE</button>
+          <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="게임 사운드 끄기">SOUND ON</button>
+        </div>
+      </div>
+
       <p class="hint">좌우 드래그 또는 A / D · ← / →로 이동 · Space / SERVE / 탭으로 서브 · P / ESC로 일시정지</p>
     </main>
-    <script src="./game.js?v=2026-08-27T05%3A49%3A34.472Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-08-27T05%3A49%3A34.472Z"></script>
+    <script src="./game.js?v=2026-08-27T06%3A15%3A22.701Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-08-27T06%3A15%3A22.701Z"></script>
 </body>
 </html>

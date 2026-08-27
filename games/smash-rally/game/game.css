@@ -24,37 +24,26 @@ button { font: inherit; }
 .game-shell { width: min(100%, 500px); padding: 18px 14px; }
 .hud {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-  gap: 16px;
-  padding: 0 5px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  padding: 2px 8px 14px;
 }
-.score-block { display: flex; flex-direction: column; gap: 3px; }
-.cpu-score { align-items: end; }
-.label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
-.score-block strong { color: var(--lime); font-size: 27px; line-height: 1; }
-.cpu-score strong { color: var(--white); }
-.center-title { color: var(--white); font-size: 12px; font-weight: 900; letter-spacing: .16em; white-space: nowrap; }
-.center-title em { color: var(--lime); font-style: normal; }
+.score-block { display: flex; min-width: 0; flex-direction: column; gap: 3px; align-items: center; text-align: center; }
+.player-score { align-items: start; text-align: left; }
+.cpu-score { align-items: end; text-align: right; }
+.label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .14em; white-space: nowrap; }
+.score-block strong { color: var(--lime); font-size: clamp(31px, 8vw, 42px); line-height: .95; }
+.target-score strong, .cpu-score strong { color: var(--white); }
+.deuce-slot { display: block; min-height: 11px; }
+.deuce-status { color: var(--lime); font-size: 8px; font-weight: 900; letter-spacing: .16em; line-height: 1; }
 
 .game-tools {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
-  margin: -4px 0 8px;
+  margin: 10px 0 0;
 }
-.match-status {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: .09em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.match-status.serve-ready { color: var(--lime); }
 .tool-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 5px; }
 .sound-toggle, .pause-toggle, .serve-toggle {
   margin: 0;
@@ -157,13 +146,13 @@ h1 em { color: var(--lime); font-style: normal; }
 
 @media (max-width: 560px) {
   .game-shell { padding: 12px 8px; }
-  .hud { gap: 8px; }
-  .game-tools { margin-top: -2px; }
-  .match-status { font-size: 8px; letter-spacing: .05em; }
+  .hud { padding: 0 4px 10px; }
+  .label { font-size: 8px; letter-spacing: .1em; }
+  .score-block strong { font-size: clamp(28px, 9vw, 36px); }
+  .deuce-status { font-size: 7px; }
+  .game-tools { margin-top: 8px; }
   .tool-actions { gap: 4px; }
   .sound-toggle, .pause-toggle, .serve-toggle { padding: 6px 7px; font-size: 8px; }
-  .center-title { font-size: 10px; }
-  .score-block strong { font-size: 23px; }
   .overlay { padding: 16px 12px; }
   .eyebrow { font-size: 8px; }
   h1 { margin: 8px 0; font-size: clamp(34px, 12vw, 50px); }
@@ -179,7 +168,9 @@ h1 em { color: var(--lime); font-style: normal; }
 
 @media (max-width: 330px) {
   .game-shell { padding: 8px 6px; }
-  .hud { padding-bottom: 8px; }
+  .hud { padding: 0 2px 8px; }
+  .label { font-size: 7px; letter-spacing: .07em; }
+  .score-block strong { font-size: 27px; }
   .overlay { padding: 9px; }
   .overlay-copy { display: none; }
   h1 { margin: 5px 0; font-size: 31px; }
