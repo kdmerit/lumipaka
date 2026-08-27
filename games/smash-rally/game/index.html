@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Smash Rally</title>
+    <link rel="stylesheet" href="./game.css?v=2026-08-27T05%3A49%3A34.472Z" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hud" aria-label="현재 점수">
+        <div class="score-block player-score"><span class="label">PLAYER</span><strong id="player-score">0</strong></div>
+        <div class="center-title">SMASH <em>RALLY</em></div>
+        <div class="score-block cpu-score"><span class="label">CPU</span><strong id="cpu-score">0</strong></div>
+      </header>
+
+      <div class="game-tools">
+        <div class="match-status" id="match-status" aria-live="polite">10 POINTS · DEUCE ON · NORMAL</div>
+        <div class="tool-actions">
+          <button class="serve-toggle" id="serve-button" type="button" disabled>SERVE</button>
+          <button class="pause-toggle" id="pause-toggle" type="button" aria-pressed="false" aria-label="게임 일시정지" disabled>PAUSE</button>
+          <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="게임 사운드 끄기">SOUND ON</button>
+        </div>
+      </div>
+
+      <section class="canvas-wrap">
+        <canvas id="game" width="720" height="960" aria-label="Smash Rally 게임 화면"></canvas>
+
+        <section class="overlay setup-overlay" id="setup-overlay" aria-labelledby="setup-title">
+          <div class="eyebrow">RALLY THE LIGHT</div>
+          <h1 id="setup-title">SMASH<br /><em>RALLY</em></h1>
+          <p class="overlay-copy">상대 벽을 향해 공을 보내세요.<br />긴 랠리일수록 공이 빨라집니다.</p>
+
+          <div class="match-settings" aria-label="게임 설정">
+            <div class="setting-group">
+              <span class="setting-label">WIN SCORE</span>
+              <div class="option-row" role="radiogroup" aria-label="승리 점수">
+                <button type="button" class="option-button" data-score="5" role="radio" aria-checked="false">5</button>
+                <button type="button" class="option-button selected" data-score="10" role="radio" aria-checked="true">10</button>
+                <button type="button" class="option-button" data-score="15" role="radio" aria-checked="false">15</button>
+                <button type="button" class="option-button" data-score="20" role="radio" aria-checked="false">20</button>
+              </div>
+            </div>
+
+            <div class="setting-group compact-setting">
+              <span class="setting-label">DEUCE</span>
+              <button type="button" class="switch-button selected" id="deuce-toggle" aria-pressed="true"><span>ON</span><span>OFF</span></button>
+            </div>
+
+            <div class="setting-group">
+              <span class="setting-label">DIFFICULTY</span>
+              <div class="option-row difficulty-row" role="radiogroup" aria-label="난이도">
+                <button type="button" class="option-button" data-difficulty="easy" role="radio" aria-checked="false">EASY</button>
+                <button type="button" class="option-button selected" data-difficulty="normal" role="radio" aria-checked="true">NORMAL</button>
+                <button type="button" class="option-button" data-difficulty="hard" role="radio" aria-checked="false">HARD</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="start-button" class="primary-button" type="button">START MATCH</button>
+        </section>
+
+        <section class="overlay result-overlay" id="result-overlay" aria-labelledby="result-title" hidden>
+          <div class="eyebrow" id="result-eyebrow">MATCH COMPLETE</div>
+          <h2 id="result-title">YOU WIN</h2>
+          <p class="result-score" id="result-score">10 : 8</p>
+          <p class="overlay-copy" id="result-copy">다시 랠리에 도전하세요.</p>
+          <div class="result-actions">
+            <button id="rematch-button" class="primary-button" type="button">REMATCH</button>
+            <button id="settings-button" class="secondary-button" type="button">SETTINGS</button>
+          </div>
+        </section>
+
+        <section class="pause-overlay" id="pause-overlay" hidden aria-live="polite">
+          <div class="pause-title">PAUSED</div>
+          <button class="primary-button" id="resume-button" type="button">RESUME</button>
+          <p class="pause-copy">RESUME 버튼 또는 P / ESC로 계속하세요</p>
+        </section>
+      </section>
+
+      <p class="hint">좌우 드래그 또는 A / D · ← / →로 이동 · Space / SERVE / 탭으로 서브 · P / ESC로 일시정지</p>
+    </main>
+    <script src="./game.js?v=2026-08-27T05%3A49%3A34.472Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-08-27T05%3A49%3A34.472Z"></script>
+</body>
+</html>
