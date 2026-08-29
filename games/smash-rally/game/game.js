@@ -3,7 +3,7 @@
 
   const WIDTH = 720;
   const HEIGHT = 960;
-  const BASE_SPEED = 468;
+  const BASE_SPEED = 608.4;
   const BALL_RADIUS = 10;
   const PADDLE_WIDTH = 164;
   const PADDLE_HEIGHT = 18;
@@ -11,7 +11,7 @@
   const CPU_Y = 60;
   const PLAYER_SPEED = 560;
   const CPU_SERVE_DELAY = 0.8;
-  const HIT_SOUND_LEAD = 0.02;
+  const HIT_SOUND_LEAD = 0.5;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
 
   const AI_PROFILES = {
@@ -73,7 +73,10 @@
   const audio = {
     context: null,
     hitBuffer: null,
+    rawHitData: null,
     loading: null,
+    decoding: null,
+    outputWarmed: false,
     activeSources: new Set()
   };
 
@@ -118,7 +121,7 @@
   }
 
   function targetSpeed() {
-    return BASE_SPEED * (1 + state.exchangePairs * 0.01);
+    return BASE_SPEED * (1.02 ** state.exchangePairs);
   }
 
   function resetPaddles() {
@@ -199,33 +202,90 @@
     return score - opponentScore >= 2;
   }
 
+  function getAudioContext() {
+    if (audio.context) return audio.context;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    try {
+      audio.context = new AudioContextClass({ latencyHint: 'interactive' });
+    } catch {
+      try {
+        audio.context = new AudioContextClass();
+      } catch {
+        return null;
+      }
+    }
+    return audio.context;
+  }
+
+  function decodeHitSound() {
+    const audioContext = audio.context;
+    if (!audioContext || !audio.rawHitData || audio.hitBuffer || audio.decoding) return;
+
+    audio.decoding = audioContext.decodeAudioData(audio.rawHitData.slice(0))
+      .then((decoded) => {
+        audio.hitBuffer = decoded;
+        warmAudioOutput();
+      })
+      .catch(() => {
+        audio.hitBuffer = null;
+      })
+      .finally(() => {
+        audio.decoding = null;
+      });
+  }
+
+  function loadHitSound() {
+    if (audio.rawHitData || audio.loading) return;
+
+    audio.loading = fetch('./audio/brick-hit.wav')
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not load hit sound.');
+        return response.arrayBuffer();
+      })
+      .then((rawData) => {
+        audio.rawHitData = rawData;
+      })
+      .catch(() => {
+        audio.rawHitData = null;
+      })
+      .finally(() => {
+        audio.loading = null;
+        decodeHitSound();
+      });
+  }
+
+  function warmAudioOutput() {
+    const audioContext = audio.context;
+    if (!state.soundEnabled || audio.outputWarmed || !audioContext || !audio.hitBuffer || audioContext.state !== 'running') return;
+
+    try {
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      source.buffer = audio.hitBuffer;
+      gain.gain.value = 0;
+      source.connect(gain).connect(audioContext.destination);
+      source.start();
+      source.stop(audioContext.currentTime + 0.01);
+      audio.outputWarmed = true;
+    } catch {
+      // The silent warm-up is optional and must not affect the game.
+    }
+  }
+
   function activateAudio() {
     if (!state.soundEnabled) return;
     try {
-      if (!audio.context) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-        audio.context = new AudioContextClass();
-      }
+      const audioContext = getAudioContext();
+      if (!audioContext) return;
 
-      audio.context.resume().catch(() => {});
-      if (audio.hitBuffer || audio.loading) return;
-
-      audio.loading = fetch('./audio/brick-hit.wav')
-        .then((response) => {
-          if (!response.ok) throw new Error('Could not load hit sound.');
-          return response.arrayBuffer();
-        })
-        .then((buffer) => audio.context.decodeAudioData(buffer))
-        .then((decoded) => {
-          audio.hitBuffer = decoded;
-        })
-        .catch(() => {
-          audio.hitBuffer = null;
-        })
-        .finally(() => {
-          audio.loading = null;
-        });
+      const prepareAudio = () => {
+        decodeHitSound();
+        warmAudioOutput();
+      };
+      loadHitSound();
+      if (audioContext.state === 'running') prepareAudio();
+      else audioContext.resume().then(prepareAudio).catch(() => {});
     } catch {
       // Sound must never prevent play when Web Audio is unavailable.
     }
@@ -308,6 +368,7 @@
     updateHud();
 
     if (state.paused) {
+      audio.outputWarmed = false;
       if (audio.context) audio.context.suspend().catch(() => {});
       return;
     }
@@ -365,6 +426,7 @@
     state.paused = false;
     state.phase = 'finished';
     stopActiveSounds();
+    audio.outputWarmed = false;
     if (audio.context) audio.context.suspend().catch(() => {});
     resultEyebrow.textContent = winner === 'player' ? 'MATCH COMPLETE' : 'KEEP THE RALLY GOING';
     resultTitle.textContent = winner === 'player' ? 'YOU WIN' : 'CPU WINS';
@@ -687,7 +749,10 @@
     state.soundEnabled = !state.soundEnabled;
     saveSoundPreference();
     if (state.soundEnabled) activateAudio();
-    else stopActiveSounds();
+    else {
+      stopActiveSounds();
+      audio.outputWarmed = false;
+    }
     updateSoundButton();
   });
   deuceButton.addEventListener('click', () => {
@@ -800,6 +865,7 @@
   resetPaddles();
   state.ball.x = WIDTH / 2;
   state.ball.y = HEIGHT / 2;
+  loadHitSound();
   updateSoundButton();
   updateSettingButtons();
   draw();
