@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-29T08:04:19.112Z",
+  "generatedAt": "2026-09-04T14:27:07.897Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -9,7 +9,7 @@
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-08-29T08%3A04%3A19.112Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-09-04T14%3A27%3A07.897Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동 · 떨어지는 아이템은 패들로 받기 · PAUSE 버튼 또는 P / ESC로 일시정지",
       "howToPlay": "패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 브릭에서 떨어지는 WIDE, MULTI, SHIELD, FIRE, DOUBLE, LIFE 아이템을 패들로 받으면 플레이에 도움이 되는 효과를 얻습니다.",
@@ -38,7 +38,7 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-08-29T08%3A04%3A19.112Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-09-04T14%3A27%3A07.897Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동 · PAUSE 버튼 또는 P / ESC로 일시정지",
       "howToPlay": "패들을 좌우로 움직여 위에서 떨어지는 블록을 피하세요. 시간이 지날수록 패턴이 빨라지므로 안전한 공간을 찾으며 1분 생존 기록을 갱신하는 게임입니다.",
@@ -61,9 +61,9 @@
       "title": "Smash Rally",
       "description": "상단 CPU와 하단 패들이 공을 주고받아 상대 벽을 넘기며 득점하는 1인용 세로 핑퐁 아케이드 게임입니다.",
       "category": "ARCADE",
-      "thumbnail": "../games/smash-rally/game/thumbnail.svg",
-      "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/smash-rally/game/?v=2026-08-29T08%3A04%3A19.112Z",
+      "thumbnail": "../games/smash-rally/game/thumbnail.png",
+      "thumbnailFile": "thumbnail.png",
+      "gameUrl": "../games/smash-rally/game/?v=2026-09-04T14%3A27%3A07.897Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D로 패들 이동 · Space 또는 SERVE 버튼으로 서브 · P / ESC 또는 PAUSE 버튼으로 일시정지 · 모바일: 화면을 좌우로 드래그하고 탭 또는 SERVE 버튼으로 서브",
       "howToPlay": "시작 전에 승리 점수, 듀스, 난이도를 고르세요. 하단 패들을 움직여 공을 위로 보내고 CPU 패들을 지나 상단 벽으로 넘기면 득점합니다. 각 랠리에서 공을 놓친 쪽이 다음 서브를 맡습니다.",
@@ -71,7 +71,7 @@
         "공이 상단 경계를 통과하면 플레이어가, 하단 경계를 통과하면 CPU가 1점을 얻습니다.",
         "듀스가 꺼져 있으면 목표 점수를 먼저 얻은 쪽이 이기고, 듀스가 켜져 있으면 목표 점수 이상에서 2점 차가 나야 승리합니다.",
         "첫 랠리는 플레이어가 서브하며, 그 뒤에는 방금 랠리에서 공을 놓친 쪽이 다음 공을 서브합니다.",
-        "플레이어와 CPU가 한 번씩 공을 반환할 때마다 그 랠리의 공 속도가 최초 속도보다 1%씩 빨라집니다."
+        "플레이어와 CPU가 한 번씩 공을 반환한 완료 쌍마다 그 랠리의 공 속도가 최초 속도에 대해 2%씩 복리로 빨라집니다."
       ],
       "tips": [
         "패들 가장자리로 공을 받아 반사 각도를 크게 바꾸면 CPU의 이동을 흔들 수 있습니다.",

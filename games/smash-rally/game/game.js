@@ -15,9 +15,14 @@
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
 
   const AI_PROFILES = {
-    easy: { reaction: 0.32, speed: 225, error: 72 },
-    normal: { reaction: 0.14, speed: 330, error: 28 },
-    hard: { reaction: 0.05, speed: 440, error: 8 }
+    easy: { reaction: 0.50, speed: 170, error: 110 },
+    normal: { reaction: 0.32, speed: 225, error: 72 },
+    hard: { reaction: 0.14, speed: 330, error: 28 }
+  };
+  const BALL_PROFILES = {
+    easy: { baseSpeed: BASE_SPEED, acceleration: 0.02 },
+    normal: { baseSpeed: BASE_SPEED * 1.3, acceleration: 0.03 },
+    hard: { baseSpeed: BASE_SPEED * 1.5, acceleration: 0.05 }
   };
 
   const canvas = document.querySelector('#game');
@@ -76,6 +81,11 @@
     rawHitData: null,
     loading: null,
     decoding: null,
+    cheerBuffer: null,
+    rawCheerData: null,
+    cheerLoading: null,
+    cheerDecoding: null,
+    cheerSource: null,
     outputWarmed: false,
     activeSources: new Set()
   };
@@ -120,8 +130,13 @@
     state.ball.vy = (state.ball.vy / currentSpeed) * speed;
   }
 
+  function getBallProfile() {
+    return BALL_PROFILES[state.settings.difficulty] || BALL_PROFILES.normal;
+  }
+
   function targetSpeed() {
-    return BASE_SPEED * (1.02 ** state.exchangePairs);
+    const profile = getBallProfile();
+    return profile.baseSpeed * ((1 + profile.acceleration) ** state.exchangePairs);
   }
 
   function resetPaddles() {
@@ -255,6 +270,42 @@
       });
   }
 
+  function decodeScoreCheer() {
+    const audioContext = audio.context;
+    if (!audioContext || !audio.rawCheerData || audio.cheerBuffer || audio.cheerDecoding) return;
+
+    audio.cheerDecoding = audioContext.decodeAudioData(audio.rawCheerData.slice(0))
+      .then((decoded) => {
+        audio.cheerBuffer = decoded;
+      })
+      .catch(() => {
+        audio.cheerBuffer = null;
+      })
+      .finally(() => {
+        audio.cheerDecoding = null;
+      });
+  }
+
+  function loadScoreCheer() {
+    if (audio.rawCheerData || audio.cheerLoading) return;
+
+    audio.cheerLoading = fetch('./audio/player-score-cheer.wav')
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not load score cheer.');
+        return response.arrayBuffer();
+      })
+      .then((rawData) => {
+        audio.rawCheerData = rawData;
+      })
+      .catch(() => {
+        audio.rawCheerData = null;
+      })
+      .finally(() => {
+        audio.cheerLoading = null;
+        decodeScoreCheer();
+      });
+  }
+
   function warmAudioOutput() {
     const audioContext = audio.context;
     if (!state.soundEnabled || audio.outputWarmed || !audioContext || !audio.hitBuffer || audioContext.state !== 'running') return;
@@ -281,9 +332,11 @@
 
       const prepareAudio = () => {
         decodeHitSound();
+        decodeScoreCheer();
         warmAudioOutput();
       };
       loadHitSound();
+      loadScoreCheer();
       if (audioContext.state === 'running') prepareAudio();
       else audioContext.resume().then(prepareAudio).catch(() => {});
     } catch {
@@ -292,6 +345,7 @@
   }
 
   function stopActiveSounds() {
+    audio.cheerSource = null;
     for (const source of audio.activeSources) {
       try {
         source.stop();
@@ -316,6 +370,42 @@
       return true;
     } catch {
       // A transient audio failure does not affect the game loop.
+      return false;
+    }
+  }
+
+  function playScoreCheer() {
+    if (!state.soundEnabled || !audio.context || !audio.cheerBuffer || audio.context.state !== 'running') return false;
+    try {
+      if (audio.cheerSource) {
+        const previousSource = audio.cheerSource;
+        audio.cheerSource = null;
+        audio.activeSources.delete(previousSource);
+        try {
+          previousSource.stop();
+        } catch {
+          // The previous cheer may already have completed.
+        }
+      }
+
+      const source = audio.context.createBufferSource();
+      const gain = audio.context.createGain();
+      source.buffer = audio.cheerBuffer;
+      gain.gain.value = 0.5;
+      source.connect(gain).connect(audio.context.destination);
+      source.onended = () => {
+        audio.activeSources.delete(source);
+        if (audio.cheerSource === source) {
+          audio.cheerSource = null;
+          if (!state.active && state.phase === 'finished') audio.context?.suspend().catch(() => {});
+        }
+      };
+      audio.activeSources.add(source);
+      audio.cheerSource = source;
+      source.start();
+      return true;
+    } catch {
+      // A crowd-audio failure must not affect scoring or the game loop.
       return false;
     }
   }
@@ -381,12 +471,13 @@
   function launchPlayerServe() {
     if (!state.active || state.paused || state.phase !== 'serve-player') return;
     activateAudio();
+    const baseSpeed = getBallProfile().baseSpeed;
     const normalizedPosition = clamp((state.player.x - WIDTH / 2) / (WIDTH / 2), -1, 1);
     const angle = normalizedPosition * 0.48;
     state.ball.x = state.player.x;
     state.ball.y = state.player.y - state.ball.radius - 2;
-    state.ball.vx = Math.sin(angle) * BASE_SPEED;
-    state.ball.vy = -Math.cos(angle) * BASE_SPEED;
+    state.ball.vx = Math.sin(angle) * baseSpeed;
+    state.ball.vy = -Math.cos(angle) * baseSpeed;
     state.phase = 'rally';
     state.aiReactionTimer = 0;
     updateHud();
@@ -395,13 +486,14 @@
   function launchCpuServe() {
     if (!state.active || state.paused || state.phase !== 'serve-cpu') return;
     const profile = AI_PROFILES[state.settings.difficulty];
+    const baseSpeed = getBallProfile().baseSpeed;
     const target = clamp(state.player.x + randomRange(-profile.error, profile.error), BALL_RADIUS, WIDTH - BALL_RADIUS);
     const horizontal = clamp((target - state.cpu.x) / (HEIGHT * 0.55), -0.58, 0.58);
     const vertical = Math.sqrt(1 - horizontal * horizontal);
     state.ball.x = state.cpu.x;
     state.ball.y = state.cpu.y + state.cpu.height + state.ball.radius + 2;
-    state.ball.vx = horizontal * BASE_SPEED;
-    state.ball.vy = vertical * BASE_SPEED;
+    state.ball.vx = horizontal * baseSpeed;
+    state.ball.vy = vertical * baseSpeed;
     state.phase = 'rally';
     state.aiReactionTimer = 0;
     updateHud();
@@ -418,6 +510,7 @@
       return;
     }
 
+    if (winner === 'player') playScoreCheer();
     resetRally(winner === 'player' ? 'cpu' : 'player');
   }
 
@@ -427,7 +520,8 @@
     state.phase = 'finished';
     stopActiveSounds();
     audio.outputWarmed = false;
-    if (audio.context) audio.context.suspend().catch(() => {});
+    const cheerStarted = winner === 'player' && playScoreCheer();
+    if (!cheerStarted && audio.context) audio.context.suspend().catch(() => {});
     resultEyebrow.textContent = winner === 'player' ? 'MATCH COMPLETE' : 'KEEP THE RALLY GOING';
     resultTitle.textContent = winner === 'player' ? 'YOU WIN' : 'CPU WINS';
     resultScore.textContent = `${state.playerScore} : ${state.cpuScore}`;
@@ -499,7 +593,7 @@
     state.hitSoundPrimedUntil = 0;
     const offset = clamp((state.ball.x - paddle.x) / (paddle.width / 2), -1, 1);
     const angle = offset * 1.02;
-    const speed = Math.max(BASE_SPEED, getBallSpeed());
+    const speed = Math.max(getBallProfile().baseSpeed, getBallSpeed());
     state.ball.vx = Math.sin(angle) * speed;
     state.ball.vy = (hitter === 'player' ? -1 : 1) * Math.cos(angle) * speed;
 
@@ -866,6 +960,7 @@
   state.ball.x = WIDTH / 2;
   state.ball.y = HEIGHT / 2;
   loadHitSound();
+  loadScoreCheer();
   updateSoundButton();
   updateSettingButtons();
   draw();
