@@ -213,3 +213,10 @@ if (page !== 'static') {
     })
     .catch((error) => renderError(error.message));
 }
+
+window.addEventListener('pageshow', (event) => {
+  if (page !== 'home' || !event.persisted) return;
+  loadCatalog()
+    .then((catalog) => renderHome(catalog))
+    .catch((error) => renderError(error.message));
+});
