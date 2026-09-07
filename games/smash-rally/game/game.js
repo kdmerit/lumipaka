@@ -16,8 +16,8 @@
 
   const AI_PROFILES = {
     easy: { reaction: 0.50, speed: 170, error: 110 },
-    normal: { reaction: 0.32, speed: 225, error: 72 },
-    hard: { reaction: 0.14, speed: 330, error: 28 }
+    normal: { reaction: 0.29, speed: 240, error: 64 },
+    hard: { reaction: 0.12, speed: 345, error: 22 }
   };
   const BALL_PROFILES = {
     easy: { baseSpeed: BASE_SPEED, acceleration: 0.02 },
