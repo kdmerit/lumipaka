@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Brick Loop</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-07T13%3A41%3A02.845Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-07T13%3A56%3A38.958Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -22,6 +22,10 @@
       </div>
       <section class="canvas-wrap">
         <canvas id="game" width="720" height="960" aria-label="Brick Loop 게임 화면"></canvas>
+        <div class="launch-prompt" id="launch-prompt" hidden aria-live="polite">
+          <strong>READY</strong>
+          <span>화면을 터치하거나 SPACE를 눌러 공을 발사하세요</span>
+        </div>
         <div class="overlay" id="overlay">
           <div class="eyebrow">BREAK THE PATTERN</div>
           <h1 id="overlay-title">BRICK<br /><em>LOOP</em></h1>
@@ -34,10 +38,8 @@
           <p class="pause-copy">RESUME 버튼을 눌러 계속하세요</p>
         </div>
       </section>
-      <p class="hint">화면을 좌우로 드래그해 패들 이동 · PAUSE 버튼 또는 P / ESC로 일시정지</p>
-      <p class="item-hint">아이템: W 패들 확대 · 3 멀티볼 · S 실드 · F 관통 · ×2 점수 · +1 라이프</p>
     </main>
-    <script src="./game.js?v=2026-09-07T13%3A41%3A02.845Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-07T13%3A41%3A02.845Z"></script>
+    <script src="./game.js?v=2026-09-07T13%3A56%3A38.958Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-07T13%3A56%3A38.958Z"></script>
 </body>
 </html>

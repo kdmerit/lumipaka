@@ -132,6 +132,8 @@ button { font: inherit; }
 .play-shell:fullscreen .game-stage, .play-shell:-webkit-full-screen .game-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .play-shell:fullscreen .play-note-row, .play-shell:-webkit-full-screen .play-note-row { flex: 0 0 auto; margin-top: 0; }
 .play-note { margin: 0; color: var(--muted); text-align: center; font-size: 12px; }
+.play-notes { display: grid; gap: 6px; margin-top: 9px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.play-note-detail { font-size: 14px; line-height: 1.6; }
 .loading-card { padding: 40px; color: var(--muted); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); text-align: center; }
 
 @media (max-width: 820px) {
@@ -149,6 +151,7 @@ button { font: inherit; }
   .site-footer { flex-direction: column; }
   .game-stage { min-height: 0; padding: 10px; }
   .game-stage iframe, .game-stage.portrait iframe { width: 100%; height: min(76vh, 650px); }
+  .play-note-detail { font-size: 14px; line-height: 1.55; }
   .game-stage.landscape { min-height: 0; }
   .game-stage.landscape iframe { width: 100%; height: min(720px, calc(56.25vw + 85px)); }
 }

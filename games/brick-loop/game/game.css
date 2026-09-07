@@ -38,6 +38,10 @@ body { display: grid; place-items: center; overflow-x: hidden; color: #f7f8ff; b
 .pause-toggle:disabled:hover { color: var(--lime); background: rgba(184,243,107,.08); }
 .canvas-wrap { position: relative; overflow: hidden; aspect-ratio: 3 / 4; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; background: var(--field); box-shadow: 0 25px 80px rgba(0,0,0,.3); }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; }
+.launch-prompt { position: absolute; z-index: 1; left: 50%; bottom: 18%; display: grid; gap: 7px; width: min(88%, 420px); padding: 12px 16px; transform: translateX(-50%); color: var(--muted); text-align: center; pointer-events: none; -webkit-user-select: none; user-select: none; }
+.launch-prompt[hidden] { display: none; }
+.launch-prompt strong { color: var(--lime); font-size: 14px; letter-spacing: .16em; }
+.launch-prompt span { font-size: 13px; font-weight: 700; line-height: 1.5; }
 .overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; padding: 25px; text-align: center; background: rgba(9,14,29,.78); }
 .overlay.hidden { display: none; }
 .pause-overlay { position: absolute; z-index: 2; inset: 0; display: grid; place-content: center; justify-items: center; gap: 16px; padding: 25px; text-align: center; background: rgba(9,14,29,.76); }
@@ -52,9 +56,6 @@ h1 em { color: var(--lime); font-style: normal; }
 .overlay p { color: var(--muted); font-size: 13px; line-height: 1.6; }
 button { margin-top: 12px; padding: 13px 25px; border: 0; border-radius: 9px; color: #17210e; background: var(--lime); cursor: pointer; font: inherit; font-size: 12px; font-weight: 900; letter-spacing: .15em; }
 button:hover { background: #d0fb9c; }
-.hint { margin: 12px 0 0; color: var(--muted); text-align: center; font-size: 10px; }
-.item-hint { margin: 6px 0 0; color: rgba(135,148,178,.78); text-align: center; font-size: 9px; line-height: 1.5; }
-
 @media (max-width: 560px) {
   .game-shell { padding: 12px 8px; }
   .hud { gap: 8px; }
@@ -63,6 +64,9 @@ button:hover { background: #d0fb9c; }
   .center-title { font-size: 10px; }
   .hud strong { font-size: 21px; }
   .overlay { padding: 10px; }
+  .launch-prompt { bottom: 14%; padding: 8px 10px; }
+  .launch-prompt strong { font-size: 12px; }
+  .launch-prompt span { font-size: 11px; }
   .eyebrow { font-size: 8px; }
   h1 { margin: 7px 0 8px; font-size: clamp(32px, 12vw, 50px); }
   .overlay p { margin: 0; font-size: 11px; line-height: 1.35; }
@@ -77,5 +81,4 @@ button:hover { background: #d0fb9c; }
   h1 { margin: 4px 0 5px; font-size: 28px; }
   .overlay p { font-size: 10px; line-height: 1.2; }
   button { margin-top: 4px; padding: 8px 16px; }
-  .item-hint { font-size: 8px; }
 }

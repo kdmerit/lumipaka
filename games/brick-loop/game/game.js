@@ -18,6 +18,7 @@
   const resumeButton = document.querySelector('#resume-button');
   const soundToggle = document.querySelector('#sound-toggle');
   const powerupsElement = document.querySelector('#powerups');
+  const launchPrompt = document.querySelector('#launch-prompt');
 
   const audioTracks = {
     death: new Audio('./audio/brick-loop-death.wav'),
@@ -60,6 +61,7 @@
     active: false,
     paused: false,
     waiting: 0,
+    awaitingLaunch: false,
     score: 0,
     best: Number(localStorage.getItem('brick-loop-best') || 0),
     lives: 3,
@@ -306,6 +308,11 @@
     pauseOverlay.hidden = !paused;
   }
 
+  function updateLaunchPrompt() {
+    if (!launchPrompt) return;
+    launchPrompt.hidden = !state.active || state.paused || !state.awaitingLaunch || state.waiting > 0;
+  }
+
   function pauseGameAudio() {
     Object.values(audioTracks).forEach((track) => track.pause());
     sfxOutputWarmed = false;
@@ -333,6 +340,7 @@
       requestAnimationFrame(loop);
     }
     updatePauseToggle();
+    updateLaunchPrompt();
     draw();
     emit('game-pause', { paused: state.paused });
   }
@@ -424,7 +432,7 @@
     }
   }
 
-  function resetBall(targetBall = ball, waitingDuration = 0.8) {
+  function resetBall(targetBall = ball, waitingDuration = 0.8, awaitLaunch = false) {
     targetBall.x = paddle.x;
     targetBall.y = paddle.y - 34;
     targetBall.speed = Math.min(BASE_BALL_SPEED + (state.level - 1) * LEVEL_SPEED_STEP, MAX_BALL_SPEED);
@@ -433,10 +441,21 @@
     targetBall.vy = -Math.sqrt(Math.max(targetBall.speed * targetBall.speed - targetBall.vx * targetBall.vx, 340 * 340));
     targetBall.hitSoundPrimedTarget = null;
     state.waiting = waitingDuration;
+    state.awaitingLaunch = awaitLaunch;
+    updateLaunchPrompt();
+  }
+
+  function launchBall() {
+    if (!state.active || state.paused || !state.awaitingLaunch || state.waiting > 0) return false;
+    state.awaitingLaunch = false;
+    state.lastTime = 0;
+    updateLaunchPrompt();
+    return true;
   }
 
   function resetGame() {
     state.paused = false;
+    state.awaitingLaunch = false;
     state.score = 0;
     state.lives = 3;
     state.level = 1;
@@ -464,6 +483,7 @@
     resetGame();
     state.active = true;
     updatePauseToggle();
+    updateLaunchPrompt();
     overlay.classList.add('hidden');
     emit('game-start');
     requestAnimationFrame(loop);
@@ -472,6 +492,7 @@
   function gameOver() {
     state.active = false;
     state.paused = false;
+    state.awaitingLaunch = false;
     stopAllAudio();
     playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
@@ -486,6 +507,7 @@
     paddle.width = BASE_PADDLE_WIDTH;
     updatePowerupStatus();
     updatePauseToggle();
+    updateLaunchPrompt();
     overlayTitle.innerHTML = 'LOOP<br /><em>OVER</em>';
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점 · 레벨 ${state.level}<br />부서진 패턴을 다시 시작해보세요.`;
     startButton.textContent = 'RESTART';
@@ -690,6 +712,10 @@
     state.deathPause = LIFE_LOSS_PAUSE;
     state.victoryPause = 0;
     state.waiting = 0;
+    state.pointerX = null;
+    state.keys.left = false;
+    state.keys.right = false;
+    state.awaitingLaunch = false;
     state.balls = [ball];
     ball.x = Math.max(ball.radius, Math.min(WIDTH - ball.radius, missedBall.x));
     ball.y = HEIGHT - ball.radius - 4;
@@ -712,7 +738,7 @@
     if (state.deathPause > 0) {
       state.deathPause = Math.max(0, state.deathPause - delta);
       if (state.deathPause === 0) {
-        resetBall(ball, 0.45);
+        resetBall(ball, 0.45, true);
         stopTrack(audioTracks.death);
       }
       return;
@@ -725,13 +751,14 @@
     paddle.x = Math.max(paddle.width / 2, Math.min(WIDTH - paddle.width / 2, paddle.x));
 
     const paddleRect = { x: paddle.x - paddle.width / 2, y: paddle.y, width: paddle.width, height: paddle.height };
-    if (state.waiting > 0) {
-      state.waiting -= delta;
+    if (state.waiting > 0 || state.awaitingLaunch) {
+      state.waiting = Math.max(0, state.waiting - delta);
       state.balls.forEach((currentBall) => {
         currentBall.x = paddle.x;
         currentBall.y = paddle.y - 34;
       });
       updateItems(delta, paddleRect);
+      updateLaunchPrompt();
       return;
     }
 
@@ -806,8 +833,8 @@
     context.save();
     context.translate(item.x, item.y);
     context.fillStyle = type.color;
-    context.shadowColor = type.color;
-    context.shadowBlur = 18;
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     context.beginPath();
     context.roundRect(-item.width / 2, -item.height / 2, item.width, item.height, 12);
     context.fill();
@@ -821,6 +848,12 @@
   }
 
   function draw() {
+    // Redraw an opaque frame and reset compositing so moving balls never leave an afterimage.
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    context.filter = 'none';
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     context.clearRect(0, 0, WIDTH, HEIGHT);
     context.fillStyle = '#101a31';
     context.fillRect(0, 0, WIDTH, HEIGHT);
@@ -862,8 +895,8 @@
     if (state.effects.shield) {
       context.save();
       context.strokeStyle = '#74d8ff';
-      context.shadowColor = '#74d8ff';
-      context.shadowBlur = 18;
+      context.shadowColor = 'transparent';
+      context.shadowBlur = 0;
       context.lineWidth = 5;
       context.beginPath();
       context.moveTo(18, SHIELD_Y);
@@ -926,6 +959,7 @@
     if (!state.active || state.paused) return;
     if (event.pointerType === 'touch') event.preventDefault();
     canvas.setPointerCapture(event.pointerId);
+    if (state.awaitingLaunch && state.waiting <= 0) launchBall();
     setPointer(event);
   });
   canvas.addEventListener('pointermove', (event) => {
@@ -935,8 +969,19 @@
       setPointer(event);
     }
   });
-  canvas.addEventListener('touchstart', (event) => { if (state.active && !state.paused) setTouchPointer(event); }, { passive: false });
+  const releasePointer = () => { state.pointerX = null; };
+  canvas.addEventListener('pointerup', releasePointer);
+  canvas.addEventListener('pointercancel', releasePointer);
+  canvas.addEventListener('lostpointercapture', releasePointer);
+  canvas.addEventListener('touchstart', (event) => {
+    if (state.active && !state.paused) {
+      if (state.awaitingLaunch && state.waiting <= 0) launchBall();
+      setTouchPointer(event);
+    }
+  }, { passive: false });
   canvas.addEventListener('touchmove', (event) => { if (state.active && !state.paused) setTouchPointer(event); }, { passive: false });
+  canvas.addEventListener('touchend', releasePointer, { passive: true });
+  canvas.addEventListener('touchcancel', releasePointer, { passive: true });
   window.addEventListener('keydown', (event) => {
     if (!event.repeat && (event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
       if (state.active) {
@@ -950,6 +995,11 @@
       togglePause();
       return;
     }
+    if (!event.repeat && (event.key === ' ' || event.key === 'Enter') && state.awaitingLaunch && state.waiting <= 0) {
+      event.preventDefault();
+      launchBall();
+      return;
+    }
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
     if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') state.keys.right = true;
   });
@@ -961,6 +1011,7 @@
   makeBricks();
   updateSoundToggle();
   updatePauseToggle();
+  updateLaunchPrompt();
   updatePowerupStatus();
   draw();
 })();

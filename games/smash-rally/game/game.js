@@ -809,6 +809,12 @@
   }
 
   function draw() {
+    // Redraw an opaque frame and reset compositing so the moving ball never leaves an afterimage.
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    context.filter = 'none';
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     context.clearRect(0, 0, WIDTH, HEIGHT);
     context.fillStyle = '#101a31';
     context.fillRect(0, 0, WIDTH, HEIGHT);
