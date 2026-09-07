@@ -124,7 +124,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .primary-button { min-width: 182px; margin-top: 21px; padding: 14px 24px; border-color: transparent; color: var(--ink); background: var(--lime); font-size: 12px; }
 .primary-button:hover { background: var(--lime-soft); }
 
-.result-overlay h2 { color: var(--lime); font-size: clamp(39px, 10vw, 68px); }
+.result-overlay h2, .set-break-overlay h2 { color: var(--lime); font-size: clamp(39px, 10vw, 68px); }
 .result-score { margin: 6px 0 10px; color: var(--white); font-size: 34px; font-weight: 900; letter-spacing: .06em; }
 .result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
 .result-actions .primary-button { margin-top: 0; }

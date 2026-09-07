@@ -35,6 +35,9 @@
   const deuceStatusElement = document.querySelector('#deuce-status');
   const setupOverlay = document.querySelector('#setup-overlay');
   const resultOverlay = document.querySelector('#result-overlay');
+  const setBreakOverlay = document.querySelector('#set-break-overlay');
+  const setBreakTitle = document.querySelector('#set-break-title');
+  const setBreakScore = document.querySelector('#set-break-score');
   const pauseOverlay = document.querySelector('#pause-overlay');
   const resultTitle = document.querySelector('#result-title');
   const resultEyebrow = document.querySelector('#result-eyebrow');
@@ -42,6 +45,7 @@
   const resultCopy = document.querySelector('#result-copy');
   const startButton = document.querySelector('#start-button');
   const rematchButton = document.querySelector('#rematch-button');
+  const nextSetButton = document.querySelector('#next-set-button');
   const settingsButton = document.querySelector('#settings-button');
   const resumeButton = document.querySelector('#resume-button');
   const pauseButton = document.querySelector('#pause-toggle');
@@ -182,7 +186,7 @@
     playerScoreElement.textContent = String(state.playerScore);
     targetScoreElement.textContent = String(state.settings.targetScore);
     cpuScoreElement.textContent = String(state.cpuScore);
-    matchStatusElement.textContent = `MATCH ${state.playerMatches}:${state.cpuMatches} / ${state.settings.matches}`;
+    matchStatusElement.textContent = `SET ${state.playerMatches}:${state.cpuMatches} / ${state.settings.matches}`;
     difficultyStatusElement.textContent = state.settings.difficulty.toUpperCase();
     deuceStatusElement.hidden = !isDeuce();
     serveButton.disabled = !(state.active && !state.paused && state.phase === 'serve-player');
@@ -436,6 +440,7 @@
     state.keys.right = false;
     setupOverlay.hidden = true;
     resultOverlay.hidden = true;
+    setBreakOverlay.hidden = true;
     pauseOverlay.hidden = true;
     resetRally('player');
     activateAudio();
@@ -462,6 +467,7 @@
     state.ball.vy = 0;
     setupOverlay.hidden = false;
     resultOverlay.hidden = true;
+    setBreakOverlay.hidden = true;
     pauseOverlay.hidden = true;
     updateHud();
     draw();
@@ -531,7 +537,11 @@
       state.playerScore = 0;
       state.cpuScore = 0;
       if (winner === 'player') playScoreCheer();
-      resetRally(winner === 'player' ? 'cpu' : 'player');
+      state.phase = 'set-break';
+      setBreakTitle.textContent = winner === 'player' ? 'PLAYER TAKES THE SET' : 'CPU TAKES THE SET';
+      setBreakScore.textContent = `SET ${state.playerMatches} : ${state.cpuMatches}`;
+      setBreakOverlay.hidden = false;
+      updateHud();
       return;
     }
 
@@ -547,10 +557,10 @@
     audio.outputWarmed = false;
     const cheerStarted = winner === 'player' && playScoreCheer();
     if (!cheerStarted && audio.context) audio.context.suspend().catch(() => {});
-    resultEyebrow.textContent = winner === 'player' ? 'MATCH COMPLETE' : 'KEEP THE RALLY GOING';
+    resultEyebrow.textContent = winner === 'player' ? 'SETS COMPLETE' : 'KEEP THE RALLY GOING';
     resultTitle.textContent = winner === 'player' ? 'YOU WIN' : 'CPU WINS';
-    resultScore.textContent = `${state.playerScore} : ${state.cpuScore} · MATCH ${state.playerMatches} : ${state.cpuMatches}`;
-    resultCopy.textContent = winner === 'player' ? '상단 벽을 넘겨 매치를 가져왔습니다.' : '패들 각도를 바꿔 다음 랠리를 공략하세요.';
+    resultScore.textContent = `${state.playerScore} : ${state.cpuScore} · SET ${state.playerMatches} : ${state.cpuMatches}`;
+    resultCopy.textContent = winner === 'player' ? '상단 벽을 넘겨 세트를 모두 가져왔습니다.' : '패들 각도를 바꿔 다음 랠리를 공략하세요.';
     resultOverlay.hidden = false;
     updateHud();
     draw();
@@ -864,6 +874,11 @@
 
   startButton.addEventListener('click', startMatch);
   rematchButton.addEventListener('click', startMatch);
+  nextSetButton.addEventListener('click', continueSet);
+  setBreakOverlay.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    continueSet();
+  }, { passive: false });
   settingsButton.addEventListener('click', openSettings);
   resumeButton.addEventListener('click', togglePause);
   pauseButton.addEventListener('click', togglePause);
@@ -888,6 +903,12 @@
       state.settings.targetScore = Number(button.dataset.score);
       updateSettingButtons();
     });
+  }
+
+  function continueSet() {
+    if (!state.active || state.phase !== 'set-break') return;
+    setBreakOverlay.hidden = true;
+    resetRally(state.playerMatches > state.cpuMatches ? 'cpu' : 'player');
   }
   for (const button of matchButtons) {
     button.addEventListener('click', () => {

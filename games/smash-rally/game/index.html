@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Smash Rally</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-07T07%3A24%3A16.391Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-07T07%3A39%3A15.079Z" />
   </head>
   <body>
     <main class="game-shell">
       <header class="hud" aria-label="현재 점수와 경기 설정">
         <div class="score-block player-score"><span class="label">PLAYER</span><strong id="player-score">0</strong></div>
-        <div class="score-block target-score"><span class="label">TARGET</span><strong id="target-score">10</strong><span class="deuce-slot"><span class="deuce-status" id="deuce-status" hidden>DEUCE</span></span><span class="match-status" id="match-status">MATCH 0/1</span><span class="difficulty-status" id="difficulty-status">NORMAL</span></div>
+        <div class="score-block target-score"><span class="label">TARGET</span><strong id="target-score">10</strong><span class="deuce-slot"><span class="deuce-status" id="deuce-status" hidden>DEUCE</span></span><span class="match-status" id="match-status">SET 0:0 / 1</span><span class="difficulty-status" id="difficulty-status">NORMAL</span></div>
         <div class="score-block cpu-score"><span class="label">CPU</span><strong id="cpu-score">0</strong></div>
       </header>
 
@@ -34,8 +34,8 @@
             </div>
 
             <div class="setting-group">
-              <span class="setting-label">MATCH POINT</span>
-              <div class="option-row match-row" role="radiogroup" aria-label="매치 수">
+              <span class="setting-label">SETS</span>
+              <div class="option-row match-row" role="radiogroup" aria-label="세트 수">
                 <button type="button" class="option-button selected" data-matches="1" role="radio" aria-checked="true">1</button>
                 <button type="button" class="option-button" data-matches="3" role="radio" aria-checked="false">3</button>
                 <button type="button" class="option-button" data-matches="5" role="radio" aria-checked="false">5</button>
@@ -57,18 +57,26 @@
             </div>
           </div>
 
-          <button id="start-button" class="primary-button" type="button">START MATCH</button>
+          <button id="start-button" class="primary-button" type="button">START SETS</button>
         </section>
 
         <section class="overlay result-overlay" id="result-overlay" aria-labelledby="result-title" hidden>
-          <div class="eyebrow" id="result-eyebrow">MATCH COMPLETE</div>
+          <div class="eyebrow" id="result-eyebrow">SET COMPLETE</div>
           <h2 id="result-title">YOU WIN</h2>
           <p class="result-score" id="result-score">10 : 8</p>
           <p class="overlay-copy" id="result-copy">다시 랠리에 도전하세요.</p>
           <div class="result-actions">
-            <button id="rematch-button" class="primary-button" type="button">REMATCH</button>
+          <button id="rematch-button" class="primary-button" type="button">RESTART SETS</button>
             <button id="settings-button" class="secondary-button" type="button">SETTINGS</button>
           </div>
+        </section>
+
+        <section class="overlay set-break-overlay" id="set-break-overlay" aria-labelledby="set-break-title" hidden>
+          <div class="eyebrow">SET COMPLETE</div>
+          <h2 id="set-break-title">PLAYER TAKES THE SET</h2>
+          <p class="result-score" id="set-break-score">SET 1 : 0</p>
+          <p class="overlay-copy">화면을 터치하면 다음 세트를 시작합니다.</p>
+          <button class="primary-button" id="next-set-button" type="button">NEXT SET</button>
         </section>
 
         <section class="pause-overlay" id="pause-overlay" hidden aria-live="polite">
@@ -88,7 +96,7 @@
 
       <p class="hint">좌우 드래그 또는 A / D · ← / →로 이동 · Space / SERVE / 탭으로 서브 · P / ESC로 일시정지</p>
     </main>
-    <script src="./game.js?v=2026-09-07T07%3A24%3A16.391Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-07T07%3A24%3A16.391Z"></script>
+    <script src="./game.js?v=2026-09-07T07%3A39%3A15.079Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-07T07%3A39%3A15.079Z"></script>
 </body>
 </html>
