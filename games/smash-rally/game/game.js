@@ -60,7 +60,7 @@
     active: false,
     paused: false,
     phase: 'setup',
-    settings: { targetScore: 10, matches: 1, deuce: true, difficulty: 'normal' },
+    settings: { targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' },
     playerScore: 0,
     cpuScore: 0,
     playerMatches: 0,
@@ -203,6 +203,11 @@
   function updateSettingButtons() {
     for (const button of scoreButtons) {
       const selected = Number(button.dataset.score) === state.settings.targetScore;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-checked', String(selected));
+    }
+    for (const button of matchButtons) {
+      const selected = Number(button.dataset.matches) === state.settings.matches;
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-checked', String(selected));
     }
@@ -382,11 +387,6 @@
     } catch {
       // A transient audio failure does not affect the game loop.
       return false;
-    }
-    for (const button of matchButtons) {
-      const selected = Number(button.dataset.matches) === state.settings.matches;
-      button.classList.toggle('selected', selected);
-      button.setAttribute('aria-checked', String(selected));
     }
   }
 
