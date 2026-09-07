@@ -26,6 +26,11 @@
   };
 
   const canvas = document.querySelector('#game');
+  // Block browser selection/drag menus without cancelling taps, scrolling or game input.
+  const gameShell = document.querySelector('.game-shell');
+  for (const eventName of ['selectstart', 'dragstart', 'contextmenu']) {
+    gameShell.addEventListener(eventName, (event) => event.preventDefault());
+  }
   const context = canvas.getContext('2d');
   const playerScoreElement = document.querySelector('#player-score');
   const targetScoreElement = document.querySelector('#target-score');

@@ -9,7 +9,14 @@
   --white: #f7f8ff;
 }
 
-* { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+* { box-sizing: border-box; }
+/* Keep long presses and native drags from interrupting play, including HUD and hints. */
+.game-shell, .game-shell * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
 html, body { width: 100%; min-height: 100%; margin: 0; }
 body {
   display: grid;
