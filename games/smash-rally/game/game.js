@@ -16,8 +16,8 @@
 
   const AI_PROFILES = {
     easy: { reaction: 0.50, speed: 170, error: 110 },
-    normal: { reaction: 0.29, speed: 240, error: 64 },
-    hard: { reaction: 0.12, speed: 345, error: 22 }
+    normal: { reaction: 0.29, speed: 260, error: 64 },
+    hard: { reaction: 0.12, speed: 375, error: 22 }
   };
   const BALL_PROFILES = {
     easy: { baseSpeed: BASE_SPEED, acceleration: 0.02 },
@@ -30,6 +30,8 @@
   const playerScoreElement = document.querySelector('#player-score');
   const targetScoreElement = document.querySelector('#target-score');
   const cpuScoreElement = document.querySelector('#cpu-score');
+  const matchStatusElement = document.querySelector('#match-status');
+  const difficultyStatusElement = document.querySelector('#difficulty-status');
   const deuceStatusElement = document.querySelector('#deuce-status');
   const setupOverlay = document.querySelector('#setup-overlay');
   const resultOverlay = document.querySelector('#result-overlay');
@@ -48,14 +50,17 @@
   const deuceButton = document.querySelector('#deuce-toggle');
   const scoreButtons = [...document.querySelectorAll('[data-score]')];
   const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
+  const matchButtons = [...document.querySelectorAll('[data-matches]')];
 
   const state = {
     active: false,
     paused: false,
     phase: 'setup',
-    settings: { targetScore: 10, deuce: true, difficulty: 'normal' },
+    settings: { targetScore: 10, matches: 1, deuce: true, difficulty: 'normal' },
     playerScore: 0,
     cpuScore: 0,
+    playerMatches: 0,
+    cpuMatches: 0,
     player: { x: WIDTH / 2, y: PLAYER_Y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
     cpu: { x: WIDTH / 2, y: CPU_Y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
     ball: { x: WIDTH / 2, y: HEIGHT / 2, vx: 0, vy: 0, radius: BALL_RADIUS },
@@ -177,6 +182,8 @@
     playerScoreElement.textContent = String(state.playerScore);
     targetScoreElement.textContent = String(state.settings.targetScore);
     cpuScoreElement.textContent = String(state.cpuScore);
+    matchStatusElement.textContent = `MATCH ${state.playerMatches}:${state.cpuMatches} / ${state.settings.matches}`;
+    difficultyStatusElement.textContent = state.settings.difficulty.toUpperCase();
     deuceStatusElement.hidden = !isDeuce();
     serveButton.disabled = !(state.active && !state.paused && state.phase === 'serve-player');
     pauseButton.disabled = !state.active;
@@ -372,6 +379,11 @@
       // A transient audio failure does not affect the game loop.
       return false;
     }
+    for (const button of matchButtons) {
+      const selected = Number(button.dataset.matches) === state.settings.matches;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-checked', String(selected));
+    }
   }
 
   function playScoreCheer() {
@@ -416,6 +428,8 @@
     state.paused = false;
     state.playerScore = 0;
     state.cpuScore = 0;
+    state.playerMatches = 0;
+    state.cpuMatches = 0;
     state.elapsed = 0;
     state.hitSoundPrimedUntil = 0;
     state.keys.left = false;
@@ -436,6 +450,8 @@
     state.phase = 'setup';
     state.playerScore = 0;
     state.cpuScore = 0;
+    state.playerMatches = 0;
+    state.cpuMatches = 0;
     state.elapsed = 0;
     state.hitSoundPrimedUntil = 0;
     stopActiveSounds();
@@ -506,7 +522,16 @@
     const winnerScore = winner === 'player' ? state.playerScore : state.cpuScore;
     const opponentScore = winner === 'player' ? state.cpuScore : state.playerScore;
     if (isMatchWon(winnerScore, opponentScore)) {
-      finishMatch(winner);
+      if (winner === 'player') state.playerMatches += 1;
+      else state.cpuMatches += 1;
+      if ((winner === 'player' ? state.playerMatches : state.cpuMatches) >= Math.ceil(state.settings.matches / 2)) {
+        finishMatch(winner);
+        return;
+      }
+      state.playerScore = 0;
+      state.cpuScore = 0;
+      if (winner === 'player') playScoreCheer();
+      resetRally(winner === 'player' ? 'cpu' : 'player');
       return;
     }
 
@@ -524,7 +549,7 @@
     if (!cheerStarted && audio.context) audio.context.suspend().catch(() => {});
     resultEyebrow.textContent = winner === 'player' ? 'MATCH COMPLETE' : 'KEEP THE RALLY GOING';
     resultTitle.textContent = winner === 'player' ? 'YOU WIN' : 'CPU WINS';
-    resultScore.textContent = `${state.playerScore} : ${state.cpuScore}`;
+    resultScore.textContent = `${state.playerScore} : ${state.cpuScore} · MATCH ${state.playerMatches} : ${state.cpuMatches}`;
     resultCopy.textContent = winner === 'player' ? '상단 벽을 넘겨 매치를 가져왔습니다.' : '패들 각도를 바꿔 다음 랠리를 공략하세요.';
     resultOverlay.hidden = false;
     updateHud();
@@ -861,6 +886,12 @@
   for (const button of scoreButtons) {
     button.addEventListener('click', () => {
       state.settings.targetScore = Number(button.dataset.score);
+      updateSettingButtons();
+    });
+  }
+  for (const button of matchButtons) {
+    button.addEventListener('click', () => {
+      state.settings.matches = Number(button.dataset.matches);
       updateSettingButtons();
     });
   }
