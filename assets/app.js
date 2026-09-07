@@ -130,22 +130,26 @@ function renderPlay(game) {
       </div>
     </div>
     ${adSlot('플레이 화면 배너 광고 슬롯')}
-    <section class="game-stage ${orientation}" id="game-stage">
-      <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
-      <iframe
-        id="game-frame"
-        title="${escapeHtml(game.title)} 플레이 화면"
-        src="${gameUrl}"
-        allow="fullscreen; autoplay; gamepad"
-        allowfullscreen
-        scrolling="no"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
-      ></iframe>
-    </section>
-    <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 전체화면 버튼을 누르면 게임 화면이 확대되고, 다시 누르면 원래 화면으로 돌아옵니다.</p>
+    <div class="play-shell" id="play-shell">
+      <section class="game-stage ${orientation}">
+        <iframe
+          id="game-frame"
+          title="${escapeHtml(game.title)} 플레이 화면"
+          src="${gameUrl}"
+          allow="fullscreen; autoplay; gamepad"
+          allowfullscreen
+          scrolling="no"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
+        ></iframe>
+      </section>
+      <div class="play-note-row">
+        <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 전체화면 버튼을 누르면 게임 화면이 확대되고, 다시 누르면 원래 화면으로 돌아옵니다.</p>
+        <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
+      </div>
+    </div>
   `;
 
-  const stage = document.querySelector('#game-stage');
+  const playShell = document.querySelector('#play-shell');
   const frame = document.querySelector('#game-frame');
   const fullscreenButton = document.querySelector('#fullscreen-button');
   const applyFrameHeight = (value) => {
@@ -172,15 +176,15 @@ function renderPlay(game) {
 
   const getFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const updateFullscreenButton = () => {
-    const active = getFullscreenElement() === stage;
-    fullscreenButton.textContent = active ? '전체화면 해제' : '전체화면';
+    const active = getFullscreenElement() === playShell;
+    fullscreenButton.textContent = '전체화면';
     fullscreenButton.setAttribute('aria-pressed', String(active));
   };
   const enterFullscreen = async () => {
-    const request = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    const request = playShell.requestFullscreen || playShell.webkitRequestFullscreen;
     if (!request) return;
     try {
-      await request.call(stage);
+      await request.call(playShell);
     } catch {
       // The browser may reject fullscreen when permission or user activation is unavailable.
     } finally {
@@ -200,7 +204,7 @@ function renderPlay(game) {
   };
 
   fullscreenButton.addEventListener('click', () => {
-    if (getFullscreenElement() === stage) {
+    if (getFullscreenElement() === playShell) {
       void exitFullscreen();
       return;
     }
