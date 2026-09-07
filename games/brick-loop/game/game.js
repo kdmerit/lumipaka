@@ -73,6 +73,69 @@
   };
 
   const colors = ['#b8f36b', '#a590ff', '#74d8ff', '#ff8bc9', '#ffd166'];
+  // One pattern is selected for each level and the 30-pattern sequence repeats at level 31.
+  const BRICK_PATTERNS = [
+    // 01: full opening wall
+    ['#######', '#######', '#######', '#######', '#######'],
+    // 02: diamond
+    ['...#...', '..###..', '.#####.', '#######', '.#####.', '..###..', '...#...'],
+    // 03: pyramid
+    ['...#...', '..###..', '.#####.', '#######', '#######', '#######'],
+    // 04: inverted pyramid
+    ['#######', '#######', '#######', '.#####.', '..###..', '...#...'],
+    // 05: cross
+    ['...#...', '...#...', '#######', '#######', '...#...', '...#...', '...#...'],
+    // 06: hourglass
+    ['#######', '.#####.', '..###..', '...#...', '..###..', '.#####.', '#######'],
+    // 07: X
+    ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'],
+    // 08: checkerboard
+    ['#.#.#.#', '.#.#.#.', '#.#.#.#', '.#.#.#.', '#.#.#.#', '.#.#.#.', '#.#.#.#'],
+    // 09: vertical bars
+    ['#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#'],
+    // 10: horizontal bars
+    ['#######', '.......', '#######', '.......', '#######', '.......', '#######'],
+    // 11: heart
+    ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...', '.......'],
+    // 12: arrow up
+    ['...#...', '..###..', '.#####.', '#######', '...#...', '...#...', '...#...'],
+    // 13: arrow down
+    ['...#...', '...#...', '...#...', '#######', '.#####.', '..###..', '...#...'],
+    // 14: arrow left
+    ['...#...', '..##...', '.###...', '#######', '.###...', '..##...', '...#...'],
+    // 15: arrow right
+    ['...#...', '...##..', '...###.', '#######', '...###.', '...##..', '...#...'],
+    // 16: square ring
+    ['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######'],
+    // 17: diamond ring
+    ['...#...', '..#.#..', '.#...#.', '#.....#', '.#...#.', '..#.#..', '...#...'],
+    // 18: butterfly
+    ['#.....#', '###.###', '#######', '.#####.', '#######', '###.###', '#.....#'],
+    // 19: crown
+    ['#.#.#.#', '#######', '.#####.', '.#####.', '.#####.', '.#####.', '.......'],
+    // 20: spaceship
+    ['...#...', '..###..', '.#####.', '#######', '#######', '#.#.#.#', '.......'],
+    // 21: alien
+    ['.#...#.', '..###..', '#######', '.#####.', '.#.#.#.', '#.....#', '.......'],
+    // 22: skull
+    ['.#####.', '#######', '##.###.', '#######', '.#####.', '..###..', '.#...#.'],
+    // 23: lightning
+    ['....##.', '...###.', '..###..', '.#####.', '...###.', '..###..', '.##....'],
+    // 24: tree
+    ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '#######'],
+    // 25: house
+    ['...#...', '..###..', '.#####.', '#######', '#..#..#', '#..#..#', '#######'],
+    // 26: fish
+    ['.......', '..####.', '.######', '#######', '.######', '..####.', '.......'],
+    // 27: wave
+    ['##...##', '###.###', '.#####.', '..###..', '.#####.', '###.###', '##...##'],
+    // 28: maze
+    ['#######', '#...#.#', '#.#.#.#', '#.#...#', '#...#.#', '#.#.#.#', '#######'],
+    // 29: brackets
+    ['##...##', '##...##', '##...##', '#######', '##...##', '##...##', '##...##'],
+    // 30: target
+    ['...#...', '..###..', '.#####.', '##.###.', '.#####.', '..###..', '...#...']
+  ];
   const itemTypes = [
     { key: 'wide', label: 'W', name: 'WIDE', color: '#b8f36b', duration: 10, weight: 30 },
     { key: 'multi', label: '3', name: 'MULTI', color: '#a590ff', weight: 20 },
@@ -283,21 +346,58 @@
   function makeBricks() {
     state.bricks = [];
     const columns = 7;
-    const rows = Math.min(5 + state.level - 1, 8);
     const width = 80;
     const height = 28;
     const gap = 10;
     const startX = (WIDTH - (columns * width + (columns - 1) * gap)) / 2;
-    for (let row = 0; row < rows; row += 1) {
-      for (let column = 0; column < columns; column += 1) {
-        state.bricks.push({
-          x: startX + column * (width + gap),
-          y: 82 + row * (height + gap),
-          width,
-          height,
-          color: colors[(row + state.level - 1) % colors.length],
-          alive: true
+    const pattern = BRICK_PATTERNS[(state.level - 1) % BRICK_PATTERNS.length];
+    const obstacleCells = [];
+    pattern.forEach((line, row) => {
+      [...line].forEach((cell, column) => {
+        if (state.level > 10 && row > 0 && row < pattern.length - 1
+          && row >= Math.floor(pattern.length / 2) - 1
+          && row <= Math.floor(pattern.length / 2) + 1
+          && column >= 1 && column <= columns - 2) {
+          obstacleCells.push({ row, column });
+        }
+        if (cell === '#') {
+          state.bricks.push({
+            x: startX + column * (width + gap),
+            y: 82 + row * (height + gap),
+            width,
+            height,
+            color: colors[(row + state.level - 1) % colors.length],
+            alive: true,
+            indestructible: false
+          });
+        }
+      });
+    });
+
+    if (state.level > 10) {
+      const obstacleCount = 2 + ((state.level - 11) % 4);
+      const middleCells = obstacleCells.sort((first, second) => {
+          const firstKey = (first.row * 17 + first.column * 31 + state.level * 13) % 97;
+          const secondKey = (second.row * 17 + second.column * 31 + state.level * 13) % 97;
+          return firstKey - secondKey;
         });
+      for (const { row, column } of middleCells.slice(0, obstacleCount)) {
+        const obstacle = state.bricks.find((brick) => brick.x === startX + column * (width + gap)
+          && brick.y === 82 + row * (height + gap));
+        if (obstacle) {
+          obstacle.color = '#56627d';
+          obstacle.indestructible = true;
+        } else {
+          state.bricks.push({
+            x: startX + column * (width + gap),
+            y: 82 + row * (height + gap),
+            width,
+            height,
+            color: '#56627d',
+            alive: true,
+            indestructible: true
+          });
+        }
       }
     }
   }
@@ -640,6 +740,11 @@
 
       for (const brick of state.bricks) {
         if (!brick.alive || !circleIntersectsRect(currentBall, brick)) continue;
+        if (brick.indestructible) {
+          currentBall.vy *= -1;
+          playCollisionSfx(currentBall, brick);
+          break;
+        }
         brick.alive = false;
         state.score += 10 * state.level * (state.effects.double > 0 ? 2 : 1);
         scoreElement.textContent = String(Math.floor(state.score));
@@ -662,7 +767,7 @@
     }
 
     state.balls = survivingBalls;
-    if (state.bricks.every((brick) => !brick.alive)) {
+    if (state.bricks.every((brick) => brick.indestructible || !brick.alive)) {
       beginLevelClear();
       return;
     }
@@ -704,15 +809,29 @@
 
     for (const brick of state.bricks) {
       if (!brick.alive) continue;
-      context.fillStyle = brick.color;
-      context.shadowColor = brick.color;
-      context.shadowBlur = 16;
+      context.fillStyle = brick.indestructible ? '#2f3b57' : brick.color;
+      context.shadowColor = brick.indestructible ? 'rgba(148,160,189,.25)' : brick.color;
+      context.shadowBlur = brick.indestructible ? 5 : 16;
       context.beginPath();
       context.roundRect(brick.x, brick.y, brick.width, brick.height, 6);
       context.fill();
       context.shadowBlur = 0;
-      context.fillStyle = 'rgba(255,255,255,.3)';
-      context.fillRect(brick.x + 10, brick.y + 5, brick.width - 20, 2);
+      if (brick.indestructible) {
+        context.strokeStyle = 'rgba(184,243,107,.55)';
+        context.lineWidth = 2;
+        context.stroke();
+        context.strokeStyle = 'rgba(148,160,189,.7)';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(brick.x + 18, brick.y + 8);
+        context.lineTo(brick.x + brick.width - 18, brick.y + brick.height - 8);
+        context.moveTo(brick.x + brick.width - 18, brick.y + 8);
+        context.lineTo(brick.x + 18, brick.y + brick.height - 8);
+        context.stroke();
+      } else {
+        context.fillStyle = 'rgba(255,255,255,.3)';
+        context.fillRect(brick.x + 10, brick.y + 5, brick.width - 20, 2);
+      }
     }
 
     for (const item of state.items) drawItem(item);
