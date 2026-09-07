@@ -883,8 +883,8 @@
     for (const currentBall of state.balls) {
       const fireActive = state.effects.fire > 0;
       context.fillStyle = fireActive ? '#ff9f43' : '#b8f36b';
-      context.shadowColor = fireActive ? '#ff9f43' : '#b8f36b';
-      context.shadowBlur = fireActive ? 24 : 18;
+      context.shadowColor = 'transparent';
+      context.shadowBlur = 0;
       context.beginPath();
       context.arc(currentBall.x, currentBall.y, currentBall.radius, 0, Math.PI * 2);
       context.fill();

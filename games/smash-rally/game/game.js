@@ -785,8 +785,8 @@
   function drawBall() {
     context.save();
     context.fillStyle = '#b8f36b';
-    context.shadowColor = '#b8f36b';
-    context.shadowBlur = 22;
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     context.beginPath();
     context.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
     context.fill();
