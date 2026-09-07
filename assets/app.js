@@ -127,11 +127,11 @@ function renderPlay(game) {
       <a class="back-link" href="../"><span aria-hidden="true">←</span> ${escapeHtml(game.title)} 정보</a>
       <div class="play-actions">
         <span class="orientation-label">${escapeHtml(orientation)}</span>
-        <button class="ghost-button" type="button" id="fullscreen-button">전체화면</button>
       </div>
     </div>
     ${adSlot('플레이 화면 배너 광고 슬롯')}
-    <section class="game-stage ${orientation}">
+    <section class="game-stage ${orientation}" id="game-stage">
+      <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
       <iframe
         id="game-frame"
         title="${escapeHtml(game.title)} 플레이 화면"
@@ -142,9 +142,10 @@ function renderPlay(game) {
         sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
       ></iframe>
     </section>
-    <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 브라우저 전체화면을 사용할 수 있습니다.</p>
+    <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 전체화면 버튼을 누르면 게임 화면이 확대되고, 다시 누르면 원래 화면으로 돌아옵니다.</p>
   `;
 
+  const stage = document.querySelector('#game-stage');
   const frame = document.querySelector('#game-frame');
   const fullscreenButton = document.querySelector('#fullscreen-button');
   const applyFrameHeight = (value) => {
@@ -169,11 +170,45 @@ function renderPlay(game) {
     }
   });
 
-  fullscreenButton.addEventListener('click', () => {
-    if (frame.requestFullscreen) {
-      frame.requestFullscreen();
+  const getFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const updateFullscreenButton = () => {
+    const active = getFullscreenElement() === stage;
+    fullscreenButton.textContent = active ? '전체화면 해제' : '전체화면';
+    fullscreenButton.setAttribute('aria-pressed', String(active));
+  };
+  const enterFullscreen = async () => {
+    const request = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    if (!request) return;
+    try {
+      await request.call(stage);
+    } catch {
+      // The browser may reject fullscreen when permission or user activation is unavailable.
+    } finally {
+      updateFullscreenButton();
     }
+  };
+  const exitFullscreen = async () => {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!exit) return;
+    try {
+      await exit.call(document);
+    } catch {
+      // The browser may already have exited fullscreen.
+    } finally {
+      updateFullscreenButton();
+    }
+  };
+
+  fullscreenButton.addEventListener('click', () => {
+    if (getFullscreenElement() === stage) {
+      void exitFullscreen();
+      return;
+    }
+    void enterFullscreen();
   });
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+  updateFullscreenButton();
 }
 
 function renderError(message) {
