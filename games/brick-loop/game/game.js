@@ -33,6 +33,7 @@
   const sfxBuffers = new Map();
   const sfxDecoding = new Map();
   const activeSfx = new Set();
+  let sfxOutputWarmed = false;
 
   const WIDTH = 720;
   const HEIGHT = 960;
@@ -45,10 +46,11 @@
   const ITEM_DROP_CHANCE = 0.1;
   const ITEM_DROP_HEIGHT = 36;
   const SHIELD_Y = HEIGHT - 28;
+  const HIT_SOUND_LEAD = 0.5;
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: BASE_PADDLE_WIDTH, height: 16, speed: 660 };
-  const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500 };
+  const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500, hitSoundPrimedTarget: null };
   const state = {
     active: false,
     paused: false,
@@ -126,7 +128,10 @@
     const rawData = sfxRawData.get(name);
     if (!context || !rawData || sfxBuffers.has(name) || sfxDecoding.has(name)) return;
     const decoding = context.decodeAudioData(rawData.slice(0))
-      .then((buffer) => { sfxBuffers.set(name, buffer); })
+      .then((buffer) => {
+        sfxBuffers.set(name, buffer);
+        warmSfxOutput();
+      })
       .catch(() => {})
       .finally(() => { sfxDecoding.delete(name); });
     sfxDecoding.set(name, decoding);
@@ -135,17 +140,42 @@
   function warmSfx() {
     const context = getSfxContext();
     if (!context) return;
-    if (context.state === 'suspended') context.resume().catch(() => {});
+    if (context.state === 'suspended') {
+      context.resume().then(() => {
+        Object.keys(sfxDefinitions).forEach(decodeSfx);
+        warmSfxOutput();
+      }).catch(() => {});
+      return;
+    }
     Object.keys(sfxDefinitions).forEach(decodeSfx);
+    warmSfxOutput();
+  }
+
+  function warmSfxOutput() {
+    const context = sfxContext;
+    const buffer = sfxBuffers.get('hit');
+    if (!state.soundEnabled || sfxOutputWarmed || !context || !buffer || context.state !== 'running') return;
+    try {
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = 0;
+      source.connect(gain).connect(context.destination);
+      source.start();
+      source.stop(context.currentTime + 0.01);
+      sfxOutputWarmed = true;
+    } catch (_) {
+      // Audio output warm-up is optional and must not affect gameplay.
+    }
   }
 
   function playSfx(name) {
-    if (!state.soundEnabled || state.paused) return;
+    if (!state.soundEnabled || state.paused) return false;
     const context = getSfxContext();
     const buffer = sfxBuffers.get(name);
     if (!context || !buffer || context.state !== 'running') {
       warmSfx();
-      return;
+      return false;
     }
     const source = context.createBufferSource();
     const gain = context.createGain();
@@ -155,6 +185,7 @@
     source.onended = () => { activeSfx.delete(source); };
     activeSfx.add(source);
     source.start();
+    return true;
   }
 
   Object.entries(sfxDefinitions).forEach(([name, definition]) => {
@@ -192,6 +223,7 @@
 
   function pauseGameAudio() {
     Object.values(audioTracks).forEach((track) => track.pause());
+    sfxOutputWarmed = false;
     if (sfxContext && sfxContext.state === 'running') sfxContext.suspend().catch(() => {});
   }
 
@@ -225,6 +257,7 @@
     localStorage.setItem('brick-loop-sound', enabled ? 'on' : 'off');
     updateSoundToggle();
     if (!enabled) {
+      sfxOutputWarmed = false;
       stopAllAudio();
       return;
     }
@@ -276,6 +309,7 @@
     const direction = Math.random() > 0.5 ? 1 : -1;
     targetBall.vx = direction * (170 + Math.random() * 70);
     targetBall.vy = -Math.sqrt(Math.max(targetBall.speed * targetBall.speed - targetBall.vx * targetBall.vx, 340 * 340));
+    targetBall.hitSoundPrimedTarget = null;
     state.waiting = waitingDuration;
   }
 
@@ -373,6 +407,62 @@
       && first.y + first.height > second.y;
   }
 
+  function reflectedBallXAt(currentBall, time) {
+    const travelWidth = WIDTH - currentBall.radius * 2;
+    const period = travelWidth * 2;
+    let projected = currentBall.x - currentBall.radius + currentBall.vx * time;
+    projected = ((projected % period) + period) % period;
+    if (projected > travelWidth) projected = period - projected;
+    return projected + currentBall.radius;
+  }
+
+  function timeToVerticalImpact(currentBall, rect) {
+    if (currentBall.vy === 0) return null;
+    const top = rect.y - currentBall.radius;
+    const bottom = rect.y + rect.height + currentBall.radius;
+    const targetEdge = currentBall.vy > 0 ? top : bottom;
+    const time = (targetEdge - currentBall.y) / currentBall.vy;
+    if (time < 0 || time > HIT_SOUND_LEAD) return null;
+
+    const projectedX = reflectedBallXAt(currentBall, time);
+    if (projectedX < rect.x - currentBall.radius || projectedX > rect.x + rect.width + currentBall.radius) return null;
+    return time;
+  }
+
+  function findApproachingHitTarget(currentBall, paddleRect) {
+    let target = null;
+    let nearestTime = HIT_SOUND_LEAD;
+    if (currentBall.vy > 0) {
+      const paddleTime = timeToVerticalImpact(currentBall, paddleRect);
+      if (paddleTime !== null) {
+        target = 'paddle';
+        nearestTime = paddleTime;
+      }
+    }
+
+    for (const brick of state.bricks) {
+      if (!brick.alive) continue;
+      const brickTime = timeToVerticalImpact(currentBall, brick);
+      if (brickTime !== null && brickTime <= nearestTime) {
+        target = brick;
+        nearestTime = brickTime;
+      }
+    }
+    return target;
+  }
+
+  function primeApproachingHitSound(currentBall, paddleRect) {
+    if (currentBall.hitSoundPrimedTarget) return;
+    const target = findApproachingHitTarget(currentBall, paddleRect);
+    if (target !== null && playSfx('hit')) currentBall.hitSoundPrimedTarget = target;
+  }
+
+  function playCollisionSfx(currentBall, target) {
+    const wasPrimed = currentBall.hitSoundPrimedTarget === target;
+    currentBall.hitSoundPrimedTarget = null;
+    if (!wasPrimed) playSfx('hit');
+  }
+
   function pickItemType() {
     const totalWeight = itemTypes.reduce((total, item) => total + item.weight, 0);
     let roll = Math.random() * totalWeight;
@@ -411,7 +501,8 @@
         radius: source.radius,
         speed,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed
+        vy: Math.sin(angle) * speed,
+        hitSoundPrimedTarget: null
       });
     }
   }
@@ -525,12 +616,14 @@
     const survivingBalls = [];
     let lastMissedBall = null;
     for (const currentBall of state.balls) {
+      primeApproachingHitSound(currentBall, paddleRect);
       currentBall.x += currentBall.vx * delta;
       currentBall.y += currentBall.vy * delta;
 
       if (currentBall.x - currentBall.radius <= 0 || currentBall.x + currentBall.radius >= WIDTH) {
         currentBall.x = Math.max(currentBall.radius, Math.min(WIDTH - currentBall.radius, currentBall.x));
         currentBall.vx *= -1;
+        currentBall.hitSoundPrimedTarget = null;
       }
       if (currentBall.y - currentBall.radius <= 0) {
         currentBall.y = currentBall.radius;
@@ -542,7 +635,7 @@
         const offset = (currentBall.x - paddle.x) / (paddle.width / 2);
         currentBall.vx = Math.max(-currentBall.speed * 0.92, Math.min(currentBall.speed * 0.92, offset * currentBall.speed * 0.95));
         currentBall.vy = -Math.sqrt(Math.max(currentBall.speed * currentBall.speed - currentBall.vx * currentBall.vx, 340 * 340));
-        playSfx('hit');
+        playCollisionSfx(currentBall, 'paddle');
       }
 
       for (const brick of state.bricks) {
@@ -552,7 +645,7 @@
         scoreElement.textContent = String(Math.floor(state.score));
         maybeDropItem(brick);
         if (state.effects.fire <= 0) currentBall.vy *= -1;
-        playSfx('hit');
+        playCollisionSfx(currentBall, brick);
         break;
       }
 
@@ -560,7 +653,7 @@
         currentBall.y = SHIELD_Y - currentBall.radius;
         currentBall.vy = -Math.abs(currentBall.vy);
         state.effects.shield = false;
-        playSfx('hit');
+        playCollisionSfx(currentBall, 'shield');
         updatePowerupStatus();
       }
 
