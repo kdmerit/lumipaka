@@ -441,6 +441,7 @@
   }
 
   function start() {
+    if (state.active) return;
     stopAllAudio();
     warmSfx();
     resetGame();
@@ -904,28 +905,21 @@
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
-  const startFromSurface = (event) => {
-    if (!state.active && event.target !== startButton) start();
-  };
-  overlay.addEventListener('pointerdown', startFromSurface);
-  overlay.addEventListener('click', startFromSurface);
   canvas.addEventListener('pointerdown', (event) => {
-    if (state.paused) return;
-    if (!state.active) start();
+    if (!state.active || state.paused) return;
     if (event.pointerType === 'touch') event.preventDefault();
     canvas.setPointerCapture(event.pointerId);
     setPointer(event);
   });
-  canvas.addEventListener('click', () => { if (!state.active) start(); });
   canvas.addEventListener('pointermove', (event) => {
-    if (state.paused) return;
+    if (!state.active || state.paused) return;
     if (event.pointerType === 'touch' || event.buttons || event.pressure > 0) {
       if (event.pointerType === 'touch') event.preventDefault();
       setPointer(event);
     }
   });
-  canvas.addEventListener('touchstart', (event) => { if (!state.paused) setTouchPointer(event); }, { passive: false });
-  canvas.addEventListener('touchmove', (event) => { if (!state.paused) setTouchPointer(event); }, { passive: false });
+  canvas.addEventListener('touchstart', (event) => { if (state.active && !state.paused) setTouchPointer(event); }, { passive: false });
+  canvas.addEventListener('touchmove', (event) => { if (state.active && !state.paused) setTouchPointer(event); }, { passive: false });
   window.addEventListener('keydown', (event) => {
     if (!event.repeat && (event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
       if (state.active) {
@@ -941,10 +935,6 @@
     }
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = true;
     if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') state.keys.right = true;
-    if (event.key === ' ' && !state.active) {
-      event.preventDefault();
-      start();
-    }
   });
   window.addEventListener('keyup', (event) => {
     if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') state.keys.left = false;

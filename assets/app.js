@@ -142,7 +142,7 @@ function renderPlay(game) {
         sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
       ></iframe>
     </section>
-    <p class="play-note">게임 화면을 눌러 시작하세요. 브라우저 전체화면을 사용할 수 있습니다.</p>
+    <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 브라우저 전체화면을 사용할 수 있습니다.</p>
   `;
 
   const frame = document.querySelector('#game-frame');
