@@ -151,7 +151,7 @@ function renderPlay(game) {
         ></iframe>
       </section>
       <div class="play-note-row">
-        <p class="play-note">게임 안의 시작 버튼을 눌러 시작하세요. 전체화면 버튼을 누르면 게임 화면이 확대되고, 다시 누르면 원래 화면으로 돌아옵니다.</p>
+        <p class="play-note">START로 시작</p>
         <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
       </div>
       ${playNotesMarkup(game)}
