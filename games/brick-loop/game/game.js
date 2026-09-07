@@ -51,7 +51,7 @@
   const ITEM_DROP_CHANCE = 0.1;
   const ITEM_DROP_HEIGHT = 36;
   const SHIELD_Y = HEIGHT - 28;
-  const HIT_SOUND_LEAD = 0.5;
+  const HIT_SOUND_LOOKAHEAD = 0.5;
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: BASE_PADDLE_WIDTH, height: 16, speed: 660 };
@@ -191,6 +191,23 @@
     return sfxContext;
   }
 
+  function getScheduledSfxTime(context, delay = 0) {
+    const safeDelay = Math.max(0, Number(delay) || 0);
+    try {
+      if (typeof context.getOutputTimestamp === 'function') {
+        const timestamp = context.getOutputTimestamp();
+        if (Number.isFinite(timestamp.contextTime) && Number.isFinite(timestamp.performanceTime)) {
+          const targetPerformanceTime = performance.now() + safeDelay * 1000;
+          const targetContextTime = timestamp.contextTime + (targetPerformanceTime - timestamp.performanceTime) / 1000;
+          if (Number.isFinite(targetContextTime) && targetContextTime >= context.currentTime) return targetContextTime;
+        }
+      }
+    } catch (_) {
+      // Output timestamp support varies between browsers and embedded WebViews.
+    }
+    return context.currentTime + safeDelay;
+  }
+
   function decodeSfx(name) {
     const context = getSfxContext();
     const rawData = sfxRawData.get(name);
@@ -237,7 +254,7 @@
     }
   }
 
-  function playSfx(name) {
+  function playSfx(name, delay = 0) {
     if (!state.soundEnabled || state.paused) return false;
     const context = getSfxContext();
     const buffer = sfxBuffers.get(name);
@@ -252,7 +269,7 @@
     source.connect(gain).connect(context.destination);
     source.onended = () => { activeSfx.delete(source); };
     activeSfx.add(source);
-    source.start();
+    source.start(getScheduledSfxTime(context, delay));
     return true;
   }
 
@@ -528,7 +545,7 @@
     const bottom = rect.y + rect.height + currentBall.radius;
     const targetEdge = currentBall.vy > 0 ? top : bottom;
     const time = (targetEdge - currentBall.y) / currentBall.vy;
-    if (time < 0 || time > HIT_SOUND_LEAD) return null;
+    if (time < 0 || time > HIT_SOUND_LOOKAHEAD) return null;
 
     const projectedX = reflectedBallXAt(currentBall, time);
     if (projectedX < rect.x - currentBall.radius || projectedX > rect.x + rect.width + currentBall.radius) return null;
@@ -537,7 +554,7 @@
 
   function findApproachingHitTarget(currentBall, paddleRect) {
     let target = null;
-    let nearestTime = HIT_SOUND_LEAD;
+    let nearestTime = HIT_SOUND_LOOKAHEAD;
     if (currentBall.vy > 0) {
       const paddleTime = timeToVerticalImpact(currentBall, paddleRect);
       if (paddleTime !== null) {
@@ -554,13 +571,13 @@
         nearestTime = brickTime;
       }
     }
-    return target;
+    return target === null ? null : { target, time: nearestTime };
   }
 
   function primeApproachingHitSound(currentBall, paddleRect) {
     if (currentBall.hitSoundPrimedTarget) return;
-    const target = findApproachingHitTarget(currentBall, paddleRect);
-    if (target !== null && playSfx('hit')) currentBall.hitSoundPrimedTarget = target;
+    const impact = findApproachingHitTarget(currentBall, paddleRect);
+    if (impact !== null && playSfx('hit', impact.time)) currentBall.hitSoundPrimedTarget = impact.target;
   }
 
   function playCollisionSfx(currentBall, target) {
@@ -816,8 +833,8 @@
     for (const brick of state.bricks) {
       if (!brick.alive) continue;
       context.fillStyle = brick.indestructible ? '#2f3b57' : brick.color;
-      context.shadowColor = brick.indestructible ? 'rgba(148,160,189,.25)' : brick.color;
-      context.shadowBlur = brick.indestructible ? 5 : 16;
+      context.shadowColor = 'transparent';
+      context.shadowBlur = 0;
       context.beginPath();
       context.roundRect(brick.x, brick.y, brick.width, brick.height, 6);
       context.fill();
@@ -856,8 +873,8 @@
     }
 
     context.fillStyle = '#ffffff';
-    context.shadowColor = '#ffffff';
-    context.shadowBlur = 20;
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     context.beginPath();
     context.roundRect(paddle.x - paddle.width / 2, paddle.y, paddle.width, paddle.height, 7);
     context.fill();

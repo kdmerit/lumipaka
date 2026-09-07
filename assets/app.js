@@ -129,8 +129,8 @@ function renderPlay(game) {
         <span class="orientation-label">${escapeHtml(orientation)}</span>
       </div>
     </div>
-    ${adSlot('플레이 화면 배너 광고 슬롯')}
     <div class="play-shell" id="play-shell">
+      ${adSlot('플레이 화면 배너 광고 슬롯')}
       <section class="game-stage ${orientation}">
         <iframe
           id="game-frame"
@@ -150,12 +150,32 @@ function renderPlay(game) {
   `;
 
   const playShell = document.querySelector('#play-shell');
+  const gameStage = playShell.querySelector('.game-stage');
   const frame = document.querySelector('#game-frame');
   const fullscreenButton = document.querySelector('#fullscreen-button');
+  let frameContentHeight = null;
+
+  const getFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const updateFrameLayout = () => {
+    if (!frameContentHeight) return;
+    frame.style.height = `${frameContentHeight}px`;
+    if (getFullscreenElement() !== playShell) {
+      frame.style.transform = '';
+      return;
+    }
+
+    const stageStyles = getComputedStyle(gameStage);
+    const verticalPadding = Number.parseFloat(stageStyles.paddingTop || 0) + Number.parseFloat(stageStyles.paddingBottom || 0);
+    const availableHeight = Math.max(120, gameStage.clientHeight - verticalPadding - 2);
+    const scale = Math.min(1, availableHeight / frameContentHeight);
+    frame.style.transformOrigin = 'center center';
+    frame.style.transform = `scale(${scale})`;
+  };
   const applyFrameHeight = (value) => {
     const height = Number(value);
     if (!Number.isFinite(height) || height < 120 || height > 1600) return;
-    frame.style.height = `${Math.ceil(height)}px`;
+    frameContentHeight = Math.ceil(height);
+    updateFrameLayout();
   };
 
   window.addEventListener('message', (event) => {
@@ -174,11 +194,14 @@ function renderPlay(game) {
     }
   });
 
-  const getFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const updateFullscreenButton = () => {
     const active = getFullscreenElement() === playShell;
     fullscreenButton.textContent = '전체화면';
     fullscreenButton.setAttribute('aria-pressed', String(active));
+  };
+  const syncFullscreenState = () => {
+    updateFullscreenButton();
+    requestAnimationFrame(updateFrameLayout);
   };
   const enterFullscreen = async () => {
     const request = playShell.requestFullscreen || playShell.webkitRequestFullscreen;
@@ -210,8 +233,9 @@ function renderPlay(game) {
     }
     void enterFullscreen();
   });
-  document.addEventListener('fullscreenchange', updateFullscreenButton);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+  document.addEventListener('fullscreenchange', syncFullscreenState);
+  document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+  window.addEventListener('resize', updateFrameLayout);
   updateFullscreenButton();
 }
 

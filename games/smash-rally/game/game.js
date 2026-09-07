@@ -9,9 +9,9 @@
   const PADDLE_HEIGHT = 18;
   const PLAYER_Y = 882;
   const CPU_Y = 60;
-  const PLAYER_SPEED = 560;
+  const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720 };
   const CPU_SERVE_DELAY = 0.8;
-  const HIT_SOUND_LEAD = 0.5;
+  const HIT_SOUND_LOOKAHEAD = 0.5;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
 
   const AI_PROFILES = {
@@ -137,6 +137,10 @@
     return Math.hypot(state.ball.vx, state.ball.vy);
   }
 
+  function getPlayerSpeed() {
+    return PLAYER_SPEEDS[state.settings.difficulty] || PLAYER_SPEEDS.normal;
+  }
+
   function setBallSpeed(speed) {
     const currentSpeed = getBallSpeed();
     if (currentSpeed <= 0) return;
@@ -252,6 +256,23 @@
       }
     }
     return audio.context;
+  }
+
+  function getScheduledAudioTime(audioContext, delay = 0) {
+    const safeDelay = Math.max(0, Number(delay) || 0);
+    try {
+      if (typeof audioContext.getOutputTimestamp === 'function') {
+        const timestamp = audioContext.getOutputTimestamp();
+        if (Number.isFinite(timestamp.contextTime) && Number.isFinite(timestamp.performanceTime)) {
+          const targetPerformanceTime = performance.now() + safeDelay * 1000;
+          const targetContextTime = timestamp.contextTime + (targetPerformanceTime - timestamp.performanceTime) / 1000;
+          if (Number.isFinite(targetContextTime) && targetContextTime >= audioContext.currentTime) return targetContextTime;
+        }
+      }
+    } catch {
+      // Output timestamp support varies between browsers and embedded WebViews.
+    }
+    return audioContext.currentTime + safeDelay;
   }
 
   function decodeHitSound() {
@@ -377,7 +398,7 @@
     audio.activeSources.clear();
   }
 
-  function playHitSound() {
+  function playHitSound(delay = 0) {
     if (!state.soundEnabled || !audio.context || !audio.hitBuffer || audio.context.state !== 'running') return false;
     try {
       const source = audio.context.createBufferSource();
@@ -387,7 +408,7 @@
       source.connect(gain).connect(audio.context.destination);
       source.onended = () => audio.activeSources.delete(source);
       audio.activeSources.add(source);
-      source.start();
+      source.start(getScheduledAudioTime(audio.context, delay));
       return true;
     } catch {
       // A transient audio failure does not affect the game loop.
@@ -573,7 +594,7 @@
 
   function updatePlayer(delta) {
     const direction = Number(state.keys.right) - Number(state.keys.left);
-    if (direction !== 0) state.player.x += direction * PLAYER_SPEED * delta;
+    if (direction !== 0) state.player.x += direction * getPlayerSpeed() * delta;
     if (state.pointerX !== null) {
       state.player.x += (state.pointerX - state.player.x) * Math.min(delta * 14, 1);
     }
@@ -660,18 +681,18 @@
       ? paddle.y + paddle.height + state.ball.radius
       : paddle.y - state.ball.radius;
     const timeToContact = (contactY - state.ball.y) / state.ball.vy;
-    if (timeToContact < 0 || timeToContact > HIT_SOUND_LEAD) return;
+    if (timeToContact < 0 || timeToContact > HIT_SOUND_LOOKAHEAD) return;
 
     const projectedX = reflectedBallXAt(timeToContact);
     const paddleSpeed = state.ball.vy < 0
       ? AI_PROFILES[state.settings.difficulty].speed
-      : PLAYER_SPEED;
+      : getPlayerSpeed();
     const movementMargin = Math.min(96, paddleSpeed * timeToContact * 0.5);
     const left = paddle.x - paddle.width / 2 - state.ball.radius - movementMargin;
     const right = paddle.x + paddle.width / 2 + state.ball.radius + movementMargin;
     if (projectedX < left || projectedX > right) return;
 
-    if (playHitSound()) state.hitSoundPrimedUntil = state.elapsed + HIT_SOUND_LEAD * 1.5;
+    if (playHitSound(timeToContact)) state.hitSoundPrimedUntil = state.elapsed + timeToContact + 0.12;
   }
 
   function updateServe(delta) {
@@ -750,8 +771,8 @@
   function drawPaddle(paddle, cpu) {
     context.save();
     context.fillStyle = '#f7f8ff';
-    context.shadowColor = cpu ? 'rgba(247,248,255,.55)' : '#b8f36b';
-    context.shadowBlur = cpu ? 14 : 18;
+    context.shadowColor = 'transparent';
+    context.shadowBlur = 0;
     roundedRect(paddle.x - paddle.width / 2, paddle.y, paddle.width, paddle.height, 8);
     context.fill();
     context.shadowBlur = 0;
