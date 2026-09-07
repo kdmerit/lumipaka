@@ -151,10 +151,9 @@ function renderPlay(game) {
         ></iframe>
       </section>
       <div class="play-note-row">
-        <p class="play-note">START로 시작</p>
+        ${playNotesMarkup(game)}
         <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
       </div>
-      ${playNotesMarkup(game)}
     </div>
   `;
 
