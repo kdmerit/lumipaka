@@ -623,8 +623,12 @@
     if (timeToContact < 0 || timeToContact > HIT_SOUND_LEAD) return;
 
     const projectedX = reflectedBallXAt(timeToContact);
-    const left = paddle.x - paddle.width / 2 - state.ball.radius;
-    const right = paddle.x + paddle.width / 2 + state.ball.radius;
+    const paddleSpeed = state.ball.vy < 0
+      ? AI_PROFILES[state.settings.difficulty].speed
+      : PLAYER_SPEED;
+    const movementMargin = Math.min(96, paddleSpeed * timeToContact * 0.5);
+    const left = paddle.x - paddle.width / 2 - state.ball.radius - movementMargin;
+    const right = paddle.x + paddle.width / 2 + state.ball.radius + movementMargin;
     if (projectedX < left || projectedX > right) return;
 
     if (playHitSound()) state.hitSoundPrimedUntil = state.elapsed + HIT_SOUND_LEAD * 1.5;
