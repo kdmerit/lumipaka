@@ -176,7 +176,8 @@ function renderPlay(game) {
     const verticalPadding = Number.parseFloat(stageStyles.paddingTop || 0) + Number.parseFloat(stageStyles.paddingBottom || 0);
     const availableHeight = Math.max(120, gameStage.clientHeight - verticalPadding - 2);
     const scale = Math.min(1, availableHeight / frameContentHeight);
-    frame.style.transformOrigin = 'center center';
+    // Keep a vertically scaled mobile fullscreen frame anchored below the banner.
+    frame.style.transformOrigin = 'center top';
     frame.style.transform = `scale(${scale})`;
   };
   const applyFrameHeight = (value) => {
