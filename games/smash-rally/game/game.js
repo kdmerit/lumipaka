@@ -48,10 +48,12 @@
   const setBreakOverlay = document.querySelector('#set-break-overlay');
   const setBreakTitle = document.querySelector('#set-break-title');
   const setBreakScore = document.querySelector('#set-break-score');
+  const setBreakCopy = document.querySelector('#set-break-copy');
   const pauseOverlay = document.querySelector('#pause-overlay');
   const resultTitle = document.querySelector('#result-title');
   const resultEyebrow = document.querySelector('#result-eyebrow');
-  const resultScore = document.querySelector('#result-score');
+  const resultSetScore = document.querySelector('#result-set-score');
+  const resultGameScore = document.querySelector('#result-game-score');
   const resultCopy = document.querySelector('#result-copy');
   const startButton = document.querySelector('#start-button');
   const rematchButton = document.querySelector('#rematch-button');
@@ -622,8 +624,9 @@
       state.cpuScore = 0;
       if (winner === 'player') playScoreCheer();
       state.phase = 'set-break';
-      setBreakTitle.textContent = winner === 'player' ? 'PLAYER TAKES THE SET' : 'CPU TAKES THE SET';
+      setBreakTitle.textContent = winner === 'player' ? '세트 승리' : '세트 패배';
       setBreakScore.textContent = `SET ${state.playerMatches} : ${state.cpuMatches}`;
+      setBreakCopy.textContent = '다음 세트를 준비하세요';
       setBreakOverlay.hidden = false;
       updateHud();
       return;
@@ -643,8 +646,9 @@
     if (!cheerStarted && audio.context) audio.context.suspend().catch(() => {});
     resultEyebrow.textContent = winner === 'player' ? 'SETS COMPLETE' : 'KEEP THE RALLY GOING';
     resultTitle.textContent = winner === 'player' ? 'YOU WIN' : 'CPU WINS';
-    resultScore.textContent = `${state.playerScore} : ${state.cpuScore} · SET ${state.playerMatches} : ${state.cpuMatches}`;
-    resultCopy.textContent = winner === 'player' ? '상단 벽을 넘겨 세트를 모두 가져왔습니다.' : '패들 각도를 바꿔 다음 랠리를 공략하세요.';
+    resultSetScore.textContent = `SET ${state.playerMatches} : ${state.cpuMatches}`;
+    resultGameScore.textContent = `${state.playerScore} : ${state.cpuScore}`;
+    resultCopy.textContent = winner === 'player' ? '플레이어의 승리' : '플레이어의 패배';
     resultOverlay.hidden = false;
     updateHud();
     draw();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Smash Rally</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-08T07%3A55%3A55.772Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-08T08%3A13%3A58.905Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -63,7 +63,10 @@
         <section class="overlay result-overlay" id="result-overlay" aria-labelledby="result-title" hidden>
           <div class="eyebrow" id="result-eyebrow">SET COMPLETE</div>
           <h2 id="result-title">YOU WIN</h2>
-          <p class="result-score" id="result-score">10 : 8</p>
+          <div class="result-score" aria-label="최종 점수">
+            <span class="result-set-score" id="result-set-score">SET 1 : 0</span>
+            <span class="result-game-score" id="result-game-score">10 : 8</span>
+          </div>
           <p class="overlay-copy" id="result-copy">다시 랠리에 도전하세요.</p>
           <div class="result-actions">
           <button id="rematch-button" class="primary-button" type="button">RESTART SETS</button>
@@ -73,9 +76,9 @@
 
         <section class="overlay set-break-overlay" id="set-break-overlay" aria-labelledby="set-break-title" hidden>
           <div class="eyebrow">SET COMPLETE</div>
-          <h2 id="set-break-title">PLAYER TAKES THE SET</h2>
+          <h2 id="set-break-title">세트 승리</h2>
           <p class="result-score" id="set-break-score">SET 1 : 0</p>
-          <p class="overlay-copy">화면을 터치하면 다음 세트를 시작합니다.</p>
+          <p class="overlay-copy" id="set-break-copy">다음 세트를 준비하세요</p>
           <button class="primary-button" id="next-set-button" type="button">NEXT SET</button>
         </section>
 
@@ -96,7 +99,7 @@
 
       <p class="hint">좌우 드래그 또는 A / D · ← / →로 이동 · Space / SERVE / 탭으로 서브 · P / ESC로 일시정지</p>
     </main>
-    <script src="./game.js?v=2026-09-08T07%3A55%3A55.772Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-08T07%3A55%3A55.772Z"></script>
+    <script src="./game.js?v=2026-09-08T08%3A13%3A58.905Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-08T08%3A13%3A58.905Z"></script>
 </body>
 </html>
