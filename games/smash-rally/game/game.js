@@ -13,6 +13,11 @@
   const CPU_SERVE_DELAY = 0.8;
   const HIT_SOUND_LOOKAHEAD = 0.5;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
+  const SETTINGS_STORAGE_KEY = 'smash-rally-settings';
+  const DEFAULT_SETTINGS = Object.freeze({ targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' });
+  const VALID_TARGET_SCORES = new Set([5, 10, 15, 20]);
+  const VALID_SET_COUNTS = new Set([1, 3, 5]);
+  const VALID_DIFFICULTIES = new Set(['easy', 'normal', 'hard']);
 
   const AI_PROFILES = {
     easy: { reaction: 0.50, speed: 170, error: 110 },
@@ -65,7 +70,7 @@
     active: false,
     paused: false,
     phase: 'setup',
-    settings: { targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' },
+    settings: readSettingsPreference(),
     playerScore: 0,
     cpuScore: 0,
     playerMatches: 0,
@@ -133,6 +138,29 @@
 
   function randomRange(minimum, maximum) {
     return minimum + Math.random() * (maximum - minimum);
+  }
+
+  function readSettingsPreference() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) || 'null');
+      if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return { ...DEFAULT_SETTINGS };
+      return {
+        targetScore: VALID_TARGET_SCORES.has(stored.targetScore) ? stored.targetScore : DEFAULT_SETTINGS.targetScore,
+        matches: VALID_SET_COUNTS.has(stored.matches) ? stored.matches : DEFAULT_SETTINGS.matches,
+        deuce: typeof stored.deuce === 'boolean' ? stored.deuce : DEFAULT_SETTINGS.deuce,
+        difficulty: VALID_DIFFICULTIES.has(stored.difficulty) ? stored.difficulty : DEFAULT_SETTINGS.difficulty
+      };
+    } catch {
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  function saveSettingsPreference() {
+    try {
+      window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state.settings));
+    } catch {
+      // Storage can be disabled in private or embedded browser contexts.
+    }
   }
 
   function emit(event, payload = {}) {
@@ -972,12 +1000,14 @@
   });
   deuceButton.addEventListener('click', () => {
     state.settings.deuce = !state.settings.deuce;
+    saveSettingsPreference();
     updateSettingButtons();
   });
 
   for (const button of scoreButtons) {
     button.addEventListener('click', () => {
       state.settings.targetScore = Number(button.dataset.score);
+      saveSettingsPreference();
       updateSettingButtons();
     });
   }
@@ -991,12 +1021,14 @@
   for (const button of matchButtons) {
     button.addEventListener('click', () => {
       state.settings.matches = Number(button.dataset.matches);
+      saveSettingsPreference();
       updateSettingButtons();
     });
   }
   for (const button of difficultyButtons) {
     button.addEventListener('click', () => {
       state.settings.difficulty = button.dataset.difficulty;
+      saveSettingsPreference();
       updateSettingButtons();
     });
   }
