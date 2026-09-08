@@ -160,6 +160,10 @@
     }
   }
 
+  function emitAnalytics(name, params = {}) {
+    emit('analytics-event', { name, params });
+  }
+
   function stopTrack(track) {
     track.pause();
     track.currentTime = 0;
@@ -486,6 +490,8 @@
     updateLaunchPrompt();
     overlay.classList.add('hidden');
     emit('game-start');
+    emitAnalytics('lumipaka_game_start');
+    emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
     requestAnimationFrame(loop);
   }
 
@@ -513,6 +519,9 @@
     startButton.textContent = 'RESTART';
     overlay.classList.remove('hidden');
     emit('game-over', { score, level: state.level });
+    emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: false });
+    emitAnalytics('post_score', { score, level: state.level, character: 'player' });
+    emitAnalytics('lumipaka_game_end', { result: 'game_over', score, level: state.level });
   }
 
   function nextLevel() {
@@ -526,6 +535,7 @@
     state.balls = [ball];
     resetBall(ball);
     updatePowerupStatus();
+    emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
   }
 
   function beginLevelClear() {
@@ -535,6 +545,7 @@
     stopAllAudio();
     playTrack(audioTracks.victory);
     emit('level-clear', { level: state.level, score: Math.floor(state.score) });
+    emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: true });
   }
 
   function circleIntersectsRect(circle, rect) {

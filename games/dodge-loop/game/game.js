@@ -48,6 +48,10 @@
     }
   }
 
+  function emitAnalytics(name, params = {}) {
+    emit('analytics-event', { name, params });
+  }
+
   function stopTrack(track) {
     track.pause();
     track.currentTime = 0;
@@ -121,6 +125,7 @@
     overlay.classList.add('hidden');
     playTrack(audioTracks.bgm);
     emit('game-start');
+    emitAnalytics('lumipaka_game_start');
     requestAnimationFrame(loop);
   }
 
@@ -142,6 +147,8 @@
     overlay.classList.remove('hidden');
     updatePauseToggle();
     emit('game-over', { score });
+    emitAnalytics('post_score', { score, character: 'player' });
+    emitAnalytics('lumipaka_game_end', { result: 'game_over', score });
   }
 
   function updatePauseToggle() {

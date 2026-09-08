@@ -4,6 +4,53 @@ const page = body.dataset.page;
 const catalogUrl = body.dataset.catalogUrl;
 const gameSlug = body.dataset.gameSlug;
 
+const GAME_ANALYTICS_EVENTS = new Set([
+  'lumipaka_game_start',
+  'lumipaka_game_end',
+  'level_start',
+  'level_end',
+  'post_score'
+]);
+
+const GAME_ANALYTICS_PARAMETERS = new Set([
+  'character',
+  'cpu_points',
+  'cpu_sets',
+  'deuce',
+  'difficulty',
+  'level',
+  'level_name',
+  'player_points',
+  'player_sets',
+  'result',
+  'score',
+  'set_count',
+  'success',
+  'target_score'
+]);
+
+function sendGameAnalyticsEvent(game, payload) {
+  const eventName = payload?.name;
+  if (!GAME_ANALYTICS_EVENTS.has(eventName) || typeof window.gtag !== 'function') return;
+
+  const parameters = { game_slug: game.slug };
+  const sourceParameters = payload?.params;
+  if (sourceParameters && typeof sourceParameters === 'object' && !Array.isArray(sourceParameters)) {
+    for (const [key, value] of Object.entries(sourceParameters)) {
+      if (!GAME_ANALYTICS_PARAMETERS.has(key)) continue;
+      if (typeof value === 'boolean') {
+        parameters[key] = value;
+      } else if (typeof value === 'number' && Number.isFinite(value)) {
+        parameters[key] = value;
+      } else if (typeof value === 'string') {
+        parameters[key] = value.slice(0, 100);
+      }
+    }
+  }
+
+  window.gtag('event', eventName, parameters);
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -190,8 +237,12 @@ function renderPlay(game) {
   window.addEventListener('message', (event) => {
     if (event.source !== frame.contentWindow) return;
     const message = event.data;
-    if (message?.source !== 'lumipaka-game' || message.event !== 'frame-resize') return;
-    applyFrameHeight(message.payload?.height);
+    if (message?.source !== 'lumipaka-game') return;
+    if (message.event === 'frame-resize') {
+      applyFrameHeight(message.payload?.height);
+      return;
+    }
+    if (message.event === 'analytics-event') sendGameAnalyticsEvent(game, message.payload);
   });
 
   frame.addEventListener('load', () => {

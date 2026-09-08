@@ -70,6 +70,8 @@
     cpuScore: 0,
     playerMatches: 0,
     cpuMatches: 0,
+    playerPoints: 0,
+    cpuPoints: 0,
     player: { x: WIDTH / 2, y: PLAYER_Y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
     cpu: { x: WIDTH / 2, y: CPU_Y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
     ball: { x: WIDTH / 2, y: HEIGHT / 2, vx: 0, vy: 0, radius: BALL_RADIUS },
@@ -131,6 +133,16 @@
 
   function randomRange(minimum, maximum) {
     return minimum + Math.random() * (maximum - minimum);
+  }
+
+  function emit(event, payload = {}) {
+    if (window.parent !== window) {
+      window.parent.postMessage({ source: 'lumipaka-game', event, payload }, '*');
+    }
+  }
+
+  function emitAnalytics(name, params = {}) {
+    emit('analytics-event', { name, params });
   }
 
   function getBallSpeed() {
@@ -460,6 +472,8 @@
     state.cpuScore = 0;
     state.playerMatches = 0;
     state.cpuMatches = 0;
+    state.playerPoints = 0;
+    state.cpuPoints = 0;
     state.elapsed = 0;
     state.hitSoundPrimedUntil = 0;
     state.keys.left = false;
@@ -472,6 +486,13 @@
     activateAudio();
     state.lastTime = 0;
     cancelAnimationFrame(state.frame);
+    emitAnalytics('lumipaka_game_start', {
+      difficulty: state.settings.difficulty,
+      target_score: state.settings.targetScore,
+      set_count: state.settings.matches,
+      deuce: state.settings.deuce
+    });
+    emitAnalytics('level_start', { level_name: 'SET 1' });
     state.frame = requestAnimationFrame(loop);
   }
 
@@ -483,6 +504,8 @@
     state.cpuScore = 0;
     state.playerMatches = 0;
     state.cpuMatches = 0;
+    state.playerPoints = 0;
+    state.cpuPoints = 0;
     state.elapsed = 0;
     state.hitSoundPrimedUntil = 0;
     stopActiveSounds();
@@ -548,14 +571,21 @@
   }
 
   function awardPoint(winner) {
-    if (winner === 'player') state.playerScore += 1;
-    else state.cpuScore += 1;
+    if (winner === 'player') {
+      state.playerScore += 1;
+      state.playerPoints += 1;
+    } else {
+      state.cpuScore += 1;
+      state.cpuPoints += 1;
+    }
 
     const winnerScore = winner === 'player' ? state.playerScore : state.cpuScore;
     const opponentScore = winner === 'player' ? state.cpuScore : state.playerScore;
     if (isMatchWon(winnerScore, opponentScore)) {
       if (winner === 'player') state.playerMatches += 1;
       else state.cpuMatches += 1;
+      const completedSet = state.playerMatches + state.cpuMatches;
+      emitAnalytics('level_end', { level_name: `SET ${completedSet}`, success: winner === 'player' });
       if ((winner === 'player' ? state.playerMatches : state.cpuMatches) >= Math.ceil(state.settings.matches / 2)) {
         finishMatch(winner);
         return;
@@ -590,6 +620,21 @@
     resultOverlay.hidden = false;
     updateHud();
     draw();
+    emitAnalytics('post_score', {
+      score: state.playerPoints,
+      level: state.playerMatches + state.cpuMatches,
+      character: 'player'
+    });
+    emitAnalytics('lumipaka_game_end', {
+      result: winner === 'player' ? 'win' : 'loss',
+      difficulty: state.settings.difficulty,
+      target_score: state.settings.targetScore,
+      set_count: state.settings.matches,
+      player_sets: state.playerMatches,
+      cpu_sets: state.cpuMatches,
+      player_points: state.playerPoints,
+      cpu_points: state.cpuPoints
+    });
   }
 
   function updatePlayer(delta) {
@@ -941,6 +986,7 @@
     if (!state.active || state.phase !== 'set-break') return;
     setBreakOverlay.hidden = true;
     resetRally(state.playerMatches > state.cpuMatches ? 'cpu' : 'player');
+    emitAnalytics('level_start', { level_name: `SET ${state.playerMatches + state.cpuMatches + 1}` });
   }
   for (const button of matchButtons) {
     button.addEventListener('click', () => {
