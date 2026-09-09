@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Stellar Rush</title>
+    <link rel="stylesheet" href="./game.css?v=2026-09-09T05%3A36%3A49.160Z" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hud" aria-label="Stellar Rush 현재 상태">
+        <div class="brand-block"><span class="eyebrow">LUMIPAKA / SHOOTER</span><strong>STELLAR <em>RUSH</em></strong></div>
+        <div class="hud-stat score-stat"><span class="hud-label">SCORE</span><strong id="score">0</strong></div>
+        <div class="hud-stat stage-stat"><span class="hud-label">STAGE</span><strong><span id="stage">01</span><small>/10</small></strong><span id="stage-name" class="hud-sub">ORBITAL DAWN</span></div>
+      </header>
+
+      <div class="status-row" aria-label="목숨과 자원">
+        <div class="status-group"><span class="hud-label">LIVES</span><strong id="lives">●●●</strong></div>
+        <div class="status-group"><span class="hud-label">BOMBS</span><strong id="bomb-count">2</strong></div>
+        <div class="status-group shield-status"><span class="hud-label">SHIELD</span><strong id="shield-status">READY</strong></div>
+      </div>
+
+      <div class="module-panel" aria-label="무기 모듈 단계">
+        <span class="module-title">WEAPON MODULES</span>
+        <div class="module-levels">
+          <span class="module-pill" id="module-split">SPLIT <b>0</b></span>
+          <span class="module-pill" id="module-laser">LASER <b>0</b></span>
+          <span class="module-pill" id="module-spread">SPREAD <b>0</b></span>
+        </div>
+      </div>
+
+      <section class="canvas-wrap">
+        <canvas id="game" width="720" height="1280" aria-label="Stellar Rush 게임 화면"></canvas>
+
+        <section class="overlay setup-overlay" id="setup-overlay" aria-labelledby="setup-title">
+          <div class="eyebrow">TEN STAGES / ONE STARSHIP</div>
+          <h1 id="setup-title">STELLAR<br /><em>RUSH</em></h1>
+          <p class="overlay-copy">자동 연사로 적 편대를 뚫고<br />무기 모듈을 모아 끝까지 돌파하세요.</p>
+          <div class="selection-heading"><span>SELECT STAGE</span><strong id="selected-stage-label">STAGE 01 · ORBITAL DAWN</strong></div>
+          <div class="stage-grid" id="stage-grid" role="listbox" aria-label="연습 스테이지 선택"></div>
+          <div class="setup-progress" id="setup-progress">FULL RUN starts at Stage 01 · cleared stages unlock practice</div>
+          <div class="setup-actions">
+            <button id="start-run-button" class="primary-button" type="button">START FULL RUN</button>
+            <button id="practice-button" class="secondary-button" type="button" disabled>PRACTICE STAGE</button>
+          </div>
+        </section>
+
+        <section class="overlay stage-overlay" id="stage-overlay" hidden aria-labelledby="stage-title">
+          <div class="eyebrow" id="stage-eyebrow">STAGE CLEAR</div>
+          <h2 id="stage-title">ORBITAL DAWN</h2>
+          <div class="medal-display" id="stage-medal">GOLD</div>
+          <p class="overlay-copy" id="stage-copy">다음 궤도로 진입합니다.</p>
+          <p class="stage-score-line" id="stage-score-line">STAGE SCORE 0</p>
+          <button id="next-stage-button" class="primary-button" type="button">NEXT STAGE</button>
+        </section>
+
+        <section class="overlay result-overlay" id="result-overlay" hidden aria-labelledby="result-title">
+          <div class="eyebrow" id="result-eyebrow">MISSION COMPLETE</div>
+          <h2 id="result-title">RUN COMPLETE</h2>
+          <p class="result-score" id="result-score">0</p>
+          <p class="overlay-copy" id="result-copy">기록을 저장했습니다.</p>
+          <div class="result-actions">
+            <button id="restart-button" class="primary-button" type="button">RESTART RUN</button>
+            <button id="setup-button" class="secondary-button" type="button">STAGE SELECT</button>
+          </div>
+        </section>
+
+        <section class="pause-overlay" id="pause-overlay" hidden aria-live="polite">
+          <div class="pause-title">PAUSED</div>
+          <button id="resume-button" class="primary-button" type="button">RESUME</button>
+          <p class="pause-copy">RESUME 또는 P / ESC로 계속하세요.</p>
+        </section>
+      </section>
+
+      <div class="game-tools" aria-label="게임 조작">
+        <button id="bomb-button" class="bomb-button" type="button" disabled>BOMB <span id="tool-bomb-count">2</span></button>
+        <button id="pause-button" class="pause-button" type="button" aria-pressed="false" disabled>PAUSE</button>
+        <button id="sound-button" class="sound-button" type="button" aria-pressed="true">SOUND ON</button>
+      </div>
+      <p class="hint">드래그 또는 ← → / A D로 이동 · 자동 연사 · Space / X / BOMB로 폭탄 · P / ESC 일시정지</p>
+    </main>
+    <script src="./game.js?v=2026-09-09T05%3A36%3A49.160Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-09T05%3A36%3A49.160Z"></script>
+</body>
+</html>

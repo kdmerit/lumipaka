@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" role="img" aria-labelledby="title desc">
+  <title id="title">Stellar Rush</title>
+  <desc id="desc">A neon starship racing through a field of enemy fire.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#172d6f"/><stop offset=".52" stop-color="#070b24"/><stop offset="1" stop-color="#13052a"/>
+    </linearGradient>
+    <linearGradient id="ship" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4fbff"/><stop offset="1" stop-color="#61dfff"/></linearGradient>
+    <radialGradient id="planet"><stop stop-color="#ffcf77"/><stop offset="1" stop-color="#fa5d9d"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="720" height="1280" fill="url(#bg)"/>
+  <circle cx="590" cy="265" r="106" fill="url(#planet)" opacity=".9" filter="url(#glow)"/>
+  <circle cx="590" cy="265" r="135" fill="none" stroke="#c5a7ff" stroke-opacity=".35" stroke-width="4"/>
+  <g fill="#fff"><circle cx="93" cy="174" r="3"/><circle cx="196" cy="372" r="4"/><circle cx="638" cy="540" r="3"/><circle cx="91" cy="746" r="4"/><circle cx="601" cy="897" r="4"/><circle cx="158" cy="1036" r="3"/><circle cx="492" cy="1118" r="3"/></g>
+  <g fill="#72e7ff" opacity=".8"><circle cx="112" cy="510" r="5"/><circle cx="531" cy="686" r="5"/><circle cx="306" cy="902" r="4"/></g>
+  <g fill="#ff789d" filter="url(#glow)"><circle cx="158" cy="622" r="10"/><circle cx="557" cy="794" r="10"/><circle cx="382" cy="498" r="8"/></g>
+  <g transform="translate(360 870)" filter="url(#glow)">
+    <path d="M0-146 62 64 0 36-62 64Z" fill="url(#ship)" stroke="#fff" stroke-width="5"/>
+    <path d="M-47 35-112 112-34 83M47 35l112 77-78-29" fill="#9c7cff" stroke="#dcd1ff" stroke-width="5"/>
+    <path d="M-22 69 0 137 22 69" fill="#ff7bc7"/>
+    <circle cx="0" cy="-60" r="13" fill="#13265e" stroke="#fff" stroke-width="4"/>
+  </g>
+  <g stroke="#72e7ff" stroke-width="7" stroke-linecap="round" opacity=".75"><path d="M242 230v46M219 253h46"/><path d="M420 340v36M402 358h36"/><path d="M270 1080v42M249 1101h42"/></g>
+  <text x="54" y="111" fill="#8b9bc6" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="7">LUMIPAKA / SHOOTER</text>
+  <text x="54" y="1190" fill="#f4f8ff" font-family="Arial, sans-serif" font-size="78" font-weight="900" letter-spacing="-5">STELLAR</text>
+  <text x="54" y="1260" fill="#72e7ff" font-family="Arial, sans-serif" font-size="84" font-weight="900" letter-spacing="-5">RUSH</text>
+</svg>
