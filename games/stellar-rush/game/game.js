@@ -582,7 +582,7 @@
 
   function spawnPickup(x, y, type) {
     if (state.pickups.length >= 8) return;
-    state.pickups.push({ x, y, type, radius: 16, life: 10, angle: random() * Math.PI * 2 });
+    state.pickups.push({ x, y, type, radius: 16, angle: random() * Math.PI * 2 });
   }
 
   function choosePickup(enemy) {
@@ -1054,13 +1054,12 @@
   function updatePickups(dt) {
     for (let index = state.pickups.length - 1; index >= 0; index -= 1) {
       const pickup = state.pickups[index];
-      pickup.y += 80 * dt;
+      pickup.y += 320 * dt;
       pickup.angle += dt * 2;
-      pickup.life -= dt;
       if (Math.hypot(pickup.x - state.playerX, pickup.y - state.playerY) < pickup.radius + 20) {
         collectPickup(pickup);
         state.pickups.splice(index, 1);
-      } else if (pickup.life <= 0 || pickup.y > HEIGHT + 50) {
+      } else if (pickup.y > HEIGHT + 50) {
         state.pickups.splice(index, 1);
       }
     }
