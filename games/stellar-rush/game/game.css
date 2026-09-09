@@ -90,6 +90,15 @@ h1 em { color: var(--cyan); font-style: normal; }
 .sound-button[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .hint { margin: 10px 0 0; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.5; }
 
+html[data-lumipaka-fullscreen="true"] body { overflow: hidden; }
+html[data-lumipaka-fullscreen="true"] .game-shell { width: 100%; max-width: none; padding: 2px 4px; }
+html[data-lumipaka-fullscreen="true"] .hud { padding: 0 4px 4px; }
+html[data-lumipaka-fullscreen="true"] .status-row { margin-bottom: 4px; }
+html[data-lumipaka-fullscreen="true"] .status-group { padding-top: 4px; padding-bottom: 4px; }
+html[data-lumipaka-fullscreen="true"] .module-panel { gap: 4px; margin-bottom: 4px; padding-top: 4px; padding-bottom: 4px; }
+html[data-lumipaka-fullscreen="true"] .game-tools { margin-top: 3px; }
+html[data-lumipaka-fullscreen="true"] .hint { display: none; }
+
 @media (max-width: 560px) {
   .game-shell { padding: 10px 7px 14px; }
   .hud { padding: 0 4px 8px; }

@@ -8,6 +8,8 @@
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 3;
+  const PICKUP_DROP_RATE = .62;
+  const TURRET_PICKUP_DROP_RATE = .72;
   const MODULES = ['split', 'laser', 'spread'];
   const SHIP = { width: 34, height: 48, speed: 520, hitRadius: 11 };
 
@@ -584,14 +586,22 @@
   }
 
   function choosePickup(enemy) {
+    const dropRate = enemy.type === 'turret' ? TURRET_PICKUP_DROP_RATE : PICKUP_DROP_RATE;
+    if (random() >= dropRate) return null;
     const roll = random();
-    if (enemy.type === 'turret' && roll < .42) return 'shield';
-    if (roll < .18) return 'bomb';
-    if (roll < .38) return 'score';
+    if (enemy.type === 'turret') {
+      if (roll < .32) return 'shield';
+      if (roll < .40) return 'bomb';
+      if (roll < .55) return 'score';
+      if (roll < .70) return 'split';
+      if (roll < .85) return 'laser';
+      return 'spread';
+    }
+    if (roll < .12) return 'bomb';
+    if (roll < .32) return 'score';
     if (roll < .55) return 'split';
-    if (roll < .71) return 'laser';
-    if (roll < .87) return 'spread';
-    return null;
+    if (roll < .78) return 'laser';
+    return 'spread';
   }
 
   function spawnEnemy(type, x, y, options = {}) {

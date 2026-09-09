@@ -18,6 +18,13 @@
 
   window.addEventListener('load', reportSize);
   window.addEventListener('resize', reportSize);
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    const message = event.data;
+    if (message?.source !== 'lumipaka-platform' || message.event !== 'fullscreen-state') return;
+    document.documentElement.dataset.lumipakaFullscreen = message.payload?.active ? 'true' : 'false';
+    requestAnimationFrame(() => requestAnimationFrame(reportSize));
+  });
   document.fonts?.ready.then(reportSize);
 
   if ('ResizeObserver' in window) {

@@ -73,14 +73,6 @@ function listMarkup(items, fallback) {
   return values.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
 }
 
-function playNotesMarkup(game) {
-  const values = Array.isArray(game.playNotes)
-    ? game.playNotes.filter((note) => typeof note === 'string' && note.trim())
-    : [];
-  if (!values.length) return '';
-  return `<div class="play-notes" aria-label="게임 조작 안내">${values.map((note) => `<p class="play-note play-note-detail">${escapeHtml(note)}</p>`).join('')}</div>`;
-}
-
 function gameGuide(game) {
   const credits = typeof game.credits === 'string' && game.credits.trim()
     ? `<p class="game-credit">${escapeHtml(game.credits)}</p>`
@@ -200,8 +192,7 @@ function renderPlay(game) {
           sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
         ></iframe>
       </section>
-      <div class="play-note-row">
-        ${playNotesMarkup(game)}
+      <div class="fullscreen-row">
         <button class="ghost-button fullscreen-button" type="button" id="fullscreen-button" aria-pressed="false">전체화면</button>
       </div>
     </div>
@@ -219,14 +210,18 @@ function renderPlay(game) {
     frame.style.height = `${frameContentHeight}px`;
     if (getFullscreenElement() !== playShell) {
       frame.style.transform = '';
+      frame.style.transformOrigin = '';
       return;
     }
 
     const stageStyles = getComputedStyle(gameStage);
+    const horizontalPadding = Number.parseFloat(stageStyles.paddingLeft || 0) + Number.parseFloat(stageStyles.paddingRight || 0);
     const verticalPadding = Number.parseFloat(stageStyles.paddingTop || 0) + Number.parseFloat(stageStyles.paddingBottom || 0);
+    const availableWidth = Math.max(120, gameStage.clientWidth - horizontalPadding - 2);
     const availableHeight = Math.max(120, gameStage.clientHeight - verticalPadding - 2);
-    const scale = Math.min(1, availableHeight / frameContentHeight);
-    // Keep a vertically scaled mobile fullscreen frame anchored below the banner.
+    const frameWidth = Math.max(1, frame.offsetWidth);
+    const scale = Math.min(availableWidth / frameWidth, availableHeight / frameContentHeight);
+    // Fit the game into the remaining fullscreen area without leaving layout padding around it.
     frame.style.transformOrigin = 'center top';
     frame.style.transform = `scale(${scale})`;
   };
@@ -255,6 +250,11 @@ function renderPlay(game) {
     } catch {
       // Cross-origin games use the postMessage bridge instead.
     }
+    frame.contentWindow?.postMessage({
+      source: 'lumipaka-platform',
+      event: 'fullscreen-state',
+      payload: { active: getFullscreenElement() === playShell }
+    }, '*');
   });
 
   const updateFullscreenButton = () => {
@@ -263,8 +263,14 @@ function renderPlay(game) {
     fullscreenButton.setAttribute('aria-pressed', String(active));
   };
   const syncFullscreenState = () => {
+    const active = getFullscreenElement() === playShell;
     updateFullscreenButton();
-    requestAnimationFrame(updateFrameLayout);
+    frame.contentWindow?.postMessage({
+      source: 'lumipaka-platform',
+      event: 'fullscreen-state',
+      payload: { active }
+    }, '*');
+    requestAnimationFrame(() => requestAnimationFrame(updateFrameLayout));
   };
   const enterFullscreen = async () => {
     const request = playShell.requestFullscreen || playShell.webkitRequestFullscreen;
