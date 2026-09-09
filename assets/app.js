@@ -82,6 +82,9 @@ function playNotesMarkup(game) {
 }
 
 function gameGuide(game) {
+  const credits = typeof game.credits === 'string' && game.credits.trim()
+    ? `<p class="game-credit">${escapeHtml(game.credits)}</p>`
+    : '';
   return `
     <section class="game-guide" aria-labelledby="game-guide-title">
       <div class="guide-card guide-intro">
@@ -101,7 +104,7 @@ function gameGuide(game) {
           <ul>${listMarkup(game.tips, '게임의 움직임을 먼저 익혀보세요.')}</ul>
         </article>
       </div>
-      <p class="game-credit">${escapeHtml(game.credits || 'LUMIPAKA 오리지널 HTML5 게임')}</p>
+      ${credits}
     </section>
   `;
 }
