@@ -577,7 +577,6 @@
       vy,
       radius: options.radius || 6,
       color: options.color || '#ff789d',
-      life: options.life || 7,
       orbit: options.orbit || null
     });
   }
@@ -866,7 +865,7 @@
         const count = 8 + state.stageIndex;
         for (let index = 0; index < count; index += 1) {
           const angle = (Math.PI * 2 * index) / count;
-          state.enemyBullets.push({ x: boss.x + Math.cos(angle) * 80, y: boss.y + Math.sin(angle) * 80, vx: 0, vy: 0, radius: 8, color: palette.accent, life: 4.2, orbit: { cx: boss.x, cy: boss.y, angle, radius: 80, speed: 1.5 + state.stageIndex * .08 } });
+          spawnEnemyBullet(boss.x + Math.cos(angle) * 80, boss.y + Math.sin(angle) * 80, 0, 0, { radius: 8, color: palette.accent, orbit: { cx: boss.x, cy: boss.y, angle, radius: 80, speed: 1.5 + state.stageIndex * .08, remaining: 4.2 } });
         }
         break;
       }
@@ -908,7 +907,6 @@
       boss.phase = targetPhase;
       boss.patternIndex = 0;
       boss.patternCooldown = .85;
-      state.enemyBullets.length = 0;
       state.hazards.length = 0;
       showToast(`PHASE ${boss.phase + 1}`, 1.2);
       playTone('boss');
@@ -963,7 +961,9 @@
       state.waveSpawnTimer = wave.spawnEvery / currentProfile().bulletDensity;
     }
     if (state.waveElapsed >= wave.duration && (state.enemies.length === 0 || state.waveElapsed >= wave.duration + 4)) {
-      state.enemies.length = 0;
+      for (const enemy of state.enemies) {
+        if (enemy.type === 'turret') enemy.retreating = true;
+      }
       state.stagePhase = 'transition';
       state.transitionTimer = 1.0;
     }
@@ -1003,6 +1003,8 @@
       } else if (enemy.type === 'charger') {
         enemy.y += enemy.vy * dt;
         if (enemy.y > 160) enemy.x += Math.sign(state.playerX - enemy.x) * (170 + state.stageIndex * 8) * dt;
+      } else if (enemy.type === 'turret' && enemy.retreating) {
+        enemy.y += enemy.vy * dt;
       } else if (enemy.type === 'turret') {
         enemy.y = enemy.originY + Math.sin(enemy.age * .7 + enemy.phase) * 22;
       } else if (enemy.type === 'orbiter') {
@@ -1056,12 +1058,18 @@
         bullet.orbit.angle += bullet.orbit.speed * dt;
         bullet.x = bullet.orbit.cx + Math.cos(bullet.orbit.angle) * bullet.orbit.radius;
         bullet.y = bullet.orbit.cy + Math.sin(bullet.orbit.angle) * bullet.orbit.radius;
+        bullet.orbit.remaining -= dt;
+        if (bullet.orbit.remaining <= 0) {
+          const speed = bullet.orbit.radius * bullet.orbit.speed;
+          bullet.vx = -Math.sin(bullet.orbit.angle) * speed;
+          bullet.vy = Math.cos(bullet.orbit.angle) * speed;
+          bullet.orbit = null;
+        }
       } else {
         bullet.x += bullet.vx * dt;
         bullet.y += bullet.vy * dt;
       }
-      bullet.life -= dt;
-      if (bullet.life <= 0 || bullet.y > HEIGHT + 100 || bullet.x < -100 || bullet.x > WIDTH + 100) state.enemyBullets.splice(index, 1);
+      if (bullet.y < -100 || bullet.y > HEIGHT + 100 || bullet.x < -100 || bullet.x > WIDTH + 100) state.enemyBullets.splice(index, 1);
     }
   }
 
