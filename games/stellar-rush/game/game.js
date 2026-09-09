@@ -8,8 +8,11 @@
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 3;
-  const PICKUP_DROP_RATE = .62;
-  const TURRET_PICKUP_DROP_RATE = .72;
+  const PICKUP_DROP_RATE = .30;
+  const TURRET_PICKUP_DROP_RATE = .35;
+  const PICKUP_SPEEDS = { shield: 440, bomb: 400, laser: 360, spread: 320, split: 280, score: 240 };
+  const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
+  const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   const MODULES = ['split', 'laser', 'spread'];
   const SHIP = { width: 34, height: 48, speed: 520, hitRadius: 11 };
 
@@ -516,9 +519,18 @@
     scoreElement.textContent = formatScore(state.score);
     stageElement.textContent = String(state.stageIndex + 1).padStart(2, '0');
     stageNameElement.textContent = stage.name;
-    livesElement.textContent = '●'.repeat(Math.max(0, state.lives)) + '○'.repeat(Math.max(0, 3 - state.lives));
-    bombCountElement.textContent = String(state.bombs);
-    toolBombCountElement.textContent = String(state.bombs);
+    if (livesElement.dataset.count !== String(state.lives)) {
+      livesElement.innerHTML = Array.from({ length: 3 }, (_, i) => `<span class="heart${i < state.lives ? '' : ' empty'}">${HEART_ICON}</span>`).join('');
+      livesElement.dataset.count = String(state.lives);
+      livesElement.setAttribute('aria-label', `남은 목숨 ${state.lives}개`);
+    }
+    for (const element of [bombCountElement, toolBombCountElement]) {
+      if (element.dataset.count === String(state.bombs)) continue;
+      element.innerHTML = `${BOMB_ICON}<span>x${state.bombs}</span>`;
+      element.dataset.count = String(state.bombs);
+      element.setAttribute('aria-label', `폭탄 ${state.bombs}개`);
+    }
+    bombButton.setAttribute('aria-label', `폭탄 사용, 남은 폭탄 ${state.bombs}개`);
     shieldStatusElement.textContent = state.shield ? 'READY' : 'EMPTY';
     shieldStatusElement.style.color = state.shield ? 'var(--yellow)' : 'var(--muted)';
     for (const moduleName of MODULES) {
@@ -800,8 +812,10 @@
         spawnAimedBurst(boss.x, boss.y + 35, 5, .46, 230 + state.stageIndex * 10);
         break;
       case 'sweep': {
-        const startX = boss.moveTime % 2 < 1 ? 80 : WIDTH - 80;
-        state.hazards.push({ type: 'vertical-beam', x: startX, vx: startX < WIDTH / 2 ? 260 : -260, width: 26, life: 2.7, color: palette.accent2 });
+        const minX = state.stageIndex === 0 ? 128 : state.stageIndex < 7 ? 112 : 96;
+        const maxX = WIDTH - minX;
+        const fromLeft = boss.moveTime % 2 < 1;
+        state.hazards.push({ type: 'vertical-beam', x: fromLeft ? minX : maxX, vx: fromLeft ? 260 : -260, minX, maxX, warning: 1, width: 26, life: 10, color: palette.accent2 });
         break;
       }
       case 'cross': {
@@ -1054,7 +1068,7 @@
   function updatePickups(dt) {
     for (let index = state.pickups.length - 1; index >= 0; index -= 1) {
       const pickup = state.pickups[index];
-      pickup.y += 320 * dt;
+      pickup.y += PICKUP_SPEEDS[pickup.type] * dt;
       pickup.angle += dt * 2;
       if (Math.hypot(pickup.x - state.playerX, pickup.y - state.playerY) < pickup.radius + 20) {
         collectPickup(pickup);
@@ -1069,9 +1083,19 @@
     for (let index = state.hazards.length - 1; index >= 0; index -= 1) {
       const hazard = state.hazards[index];
       hazard.life -= dt;
-      if (hazard.type === 'vertical-beam') hazard.x += hazard.vx * dt;
+      if (hazard.type === 'vertical-beam') {
+        if (hazard.warning > 0) {
+          hazard.warning = Math.max(0, hazard.warning - dt);
+          continue;
+        }
+        hazard.x += hazard.vx * dt;
+        if (hazard.x <= hazard.minX || hazard.x >= hazard.maxX) {
+          state.hazards.splice(index, 1);
+          continue;
+        }
+      }
       if (hazard.type === 'mine') hazard.pulse += dt * 5;
-      if (hazard.type === 'vertical-beam' && Math.abs(hazard.x - state.playerX) < hazard.width / 2 + SHIP.hitRadius) takeHit();
+      if (hazard.type === 'vertical-beam' && state.playerY + SHIP.hitRadius >= 80 && state.playerY - SHIP.hitRadius <= HEIGHT - 70 && Math.abs(hazard.x - state.playerX) < hazard.width / 2 + SHIP.hitRadius) takeHit();
       if (hazard.type === 'mine' && Math.hypot(hazard.x - state.playerX, hazard.y - state.playerY) < hazard.radius + SHIP.hitRadius) takeHit();
       if (hazard.type === 'lane-warning') {
         if (hazard.life <= 0) state.hazards.splice(index, 1);
@@ -1427,6 +1451,23 @@
     const palette = currentStage().palette;
     context.save();
     if (hazard.type === 'vertical-beam') {
+      if (hazard.warning > 0) {
+        const safeWidth = hazard.minX - hazard.width / 2 - SHIP.hitRadius - 2;
+        context.fillStyle = '#77f0d0';
+        context.globalAlpha = .2;
+        context.fillRect(32, 80, safeWidth - 32, HEIGHT - 150);
+        context.fillRect(WIDTH - safeWidth, 80, safeWidth - 32, HEIGHT - 150);
+        context.globalAlpha = .85;
+        context.strokeStyle = hazard.color;
+        context.setLineDash([12, 12]);
+        context.strokeRect(hazard.x - hazard.width / 2, 80, hazard.width, HEIGHT - 150);
+        context.fillStyle = hazard.color;
+        context.font = 'bold 44px sans-serif';
+        context.textAlign = 'center';
+        context.fillText(hazard.vx > 0 ? '→' : '←', WIDTH / 2, state.playerY - 80);
+        context.restore();
+        return;
+      }
       context.globalAlpha = .75;
       context.fillStyle = hazard.color;
       context.shadowColor = hazard.color;

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Stellar Rush</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-09T06%3A41%3A30.575Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-09T07%3A02%3A33.018Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -15,8 +15,8 @@
       </header>
 
       <div class="status-row" aria-label="목숨과 자원">
-        <div class="status-group"><span class="hud-label">LIVES</span><strong id="lives">●●●</strong></div>
-        <div class="status-group"><span class="hud-label">BOMBS</span><strong id="bomb-count">2</strong></div>
+        <div class="status-group"><span class="hud-label">LIVES</span><strong id="lives" role="img" aria-label="남은 목숨 3개"></strong></div>
+        <div class="status-group"><span class="hud-label">BOMBS</span><strong id="bomb-count" class="bomb-display" role="img" aria-label="폭탄 2개"></strong></div>
         <div class="status-group shield-status"><span class="hud-label">SHIELD</span><strong id="shield-status">READY</strong></div>
       </div>
 
@@ -40,8 +40,8 @@
           <div class="stage-grid" id="stage-grid" role="listbox" aria-label="연습 스테이지 선택"></div>
           <div class="setup-progress" id="setup-progress">FULL RUN starts at Stage 01 · cleared stages unlock practice</div>
           <div class="setup-actions">
-            <button id="start-run-button" class="primary-button" type="button">START FULL RUN</button>
-            <button id="practice-button" class="secondary-button" type="button" disabled>PRACTICE STAGE</button>
+            <button id="start-run-button" class="primary-button" type="button">PLAY ALL STAGES</button>
+            <button id="practice-button" class="secondary-button" type="button" disabled>PLAY SELECTED STAGE</button>
           </div>
         </section>
 
@@ -73,13 +73,13 @@
       </section>
 
       <div class="game-tools" aria-label="게임 조작">
-        <button id="bomb-button" class="bomb-button" type="button" disabled>BOMB <span id="tool-bomb-count">2</span></button>
+        <button id="bomb-button" class="bomb-button" type="button" aria-label="폭탄 사용, 남은 폭탄 2개" disabled><span id="tool-bomb-count" class="bomb-display"></span></button>
         <button id="pause-button" class="pause-button" type="button" aria-pressed="false" disabled>PAUSE</button>
         <button id="sound-button" class="sound-button" type="button" aria-pressed="true">SOUND ON</button>
       </div>
       <p class="hint">드래그 또는 ← → / A D로 이동 · 자동 연사 · Space / X / BOMB로 폭탄 · P / ESC 일시정지</p>
     </main>
-    <script src="./game.js?v=2026-09-09T06%3A41%3A30.575Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-09T06%3A41%3A30.575Z"></script>
+    <script src="./game.js?v=2026-09-09T07%3A02%3A33.018Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-09T07%3A02%3A33.018Z"></script>
 </body>
 </html>

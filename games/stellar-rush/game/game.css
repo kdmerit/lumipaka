@@ -89,6 +89,13 @@ h1 em { color: var(--cyan); font-style: normal; }
 .bomb-button:disabled, .pause-button:disabled { cursor: default; opacity: .35; }
 .sound-button[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .hint { margin: 10px 0 0; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.5; }
+#lives, .bomb-display { display: inline-flex; align-items: center; gap: 3px; }
+.heart svg, .bomb-display svg { display: block; width: 16px; height: 16px; }
+.heart { color: #ff7bc7; }
+.heart svg { fill: currentColor; stroke: currentColor; stroke-width: 1; }
+.heart.empty { opacity: .35; }
+.heart.empty svg { fill: none; }
+.setup-actions > button { flex: 1 1 160px; max-width: 220px; }
 
 html[data-lumipaka-fullscreen="true"] body { overflow: hidden; }
 html[data-lumipaka-fullscreen="true"] .game-shell { width: 100%; max-width: none; padding: 2px 4px; }
