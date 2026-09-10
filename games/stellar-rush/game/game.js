@@ -12,10 +12,17 @@
   const TURRET_PICKUP_DROP_RATE = .175;
   const MOB_BULLET_COLOR = '#FF781F';
   const MOB_BULLET_SPEED_MULTIPLIER = 3;
-  const PICKUP_SPEEDS = { shield: 440, bomb: 400, laser: 360, spread: 320, split: 280, score: 240 };
+  const PLAYER_REAR_Y = HEIGHT - 112;
+  const PLAYER_FORWARD_Y = HEIGHT / 2;
+  const PICKUP_SPEEDS = { shield: 440, bomb: 400, missile: 360, spread: 320, split: 280, score: 240 };
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-  const MODULES = ['split', 'laser', 'spread'];
+  const MODULES = ['split', 'missile', 'spread'];
+  const MISSILE = { speed: 700, damage: 14, turnRate: 6, life: 2, intervals: [0, 2, 1, .5] };
+  const WEAPON_SAMPLES = {
+    subBolt: './audio-samples/low-03-sub-bolt.wav',
+    bassPlasma: './audio-samples/low-01-bass-plasma.wav'
+  };
   const skins = window.StellarSkins;
   const SKIN_VARIANTS = { scout: [1, 3], zigzag: [7], shooter: [2, 6], charger: [5], turret: [4, 8], orbiter: [9] };
   const skinCounts = {};
@@ -127,7 +134,7 @@
   const shieldStatusElement = $('#shield-status');
   const moduleElements = {
     split: $('#module-split'),
-    laser: $('#module-laser'),
+    missile: $('#module-missile'),
     spread: $('#module-spread')
   };
   const setupOverlay = $('#setup-overlay');
@@ -232,14 +239,16 @@
     pendingStageClear: false,
     visualTime: 0,
     shield: 0,
-    modules: { split: 0, laser: 0, spread: 0 },
+    modules: { split: 0, missile: 0, spread: 0 },
     playerX: WIDTH / 2,
     playerY: HEIGHT - 112,
     pointerTargetX: WIDTH / 2,
+    pointerTargetY: PLAYER_REAR_Y,
     pointerActive: false,
     pointerId: null,
-    keys: { left: false, right: false },
+    keys: { left: false, right: false, up: false, down: false },
     fireTimer: .1,
+    missileTimer: 0,
     invulnerable: 0,
     respawnTimer: 0,
     boss: null,
@@ -259,7 +268,7 @@
     lastTime: performance.now()
   };
 
-  const audio = { context: null };
+  const audio = { context: null, compressor: null, samples: new Map() };
 
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
@@ -310,16 +319,67 @@
       } catch {
         try { audio.context = new AudioContextClass(); } catch { return null; }
       }
+      audio.compressor = audio.context.createDynamicsCompressor();
+      audio.compressor.threshold.value = -20;
+      audio.compressor.knee.value = 12;
+      audio.compressor.ratio.value = 10;
+      audio.compressor.attack.value = .003;
+      audio.compressor.release.value = .16;
+      audio.compressor.connect(audio.context.destination);
     }
     if (audio.context.state === 'suspended') audio.context.resume().catch(() => {});
     return audio.context;
+  }
+
+  function preloadWeaponSamples() {
+    return Promise.all(Object.entries(WEAPON_SAMPLES).map(async ([name, source]) => {
+      try {
+        const response = await fetch(source);
+        if (!response.ok) return;
+        const bytes = await response.arrayBuffer();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const audioContext = audio.context || (() => {
+          try { return new AudioContextClass({ latencyHint: 'interactive' }); } catch { return new AudioContextClass(); }
+        })();
+        audio.context = audioContext;
+        if (!audio.compressor) {
+          audio.compressor = audioContext.createDynamicsCompressor();
+          audio.compressor.threshold.value = -20;
+          audio.compressor.knee.value = 12;
+          audio.compressor.ratio.value = 10;
+          audio.compressor.attack.value = .003;
+          audio.compressor.release.value = .16;
+          audio.compressor.connect(audioContext.destination);
+        }
+        audio.samples.set(name, await audioContext.decodeAudioData(bytes));
+      } catch {
+        // Effects remain playable with the rest of the game if a sample cannot load.
+      }
+    }));
+  }
+
+  function weaponPlaybackRate(level) {
+    return level >= 3 ? 1.5 : level === 2 ? 1.25 : 1;
+  }
+
+  function playWeaponSample(name, level) {
+    const audioContext = ensureAudio();
+    const buffer = audio.samples.get(name);
+    if (!audioContext || !buffer) return;
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = weaponPlaybackRate(level);
+    gain.gain.value = name === 'bassPlasma' ? .14 : .10;
+    source.connect(gain).connect(audio.compressor || audioContext.destination);
+    source.start();
   }
 
   function playTone(type) {
     const audioContext = ensureAudio();
     if (!audioContext) return;
     const profiles = {
-      shoot: { frequency: 360, duration: .035, gain: .018, wave: 'square' },
       pickup: { frequency: 680, duration: .12, gain: .045, wave: 'sine' },
       hit: { frequency: 110, duration: .08, gain: .04, wave: 'sawtooth' },
       bomb: { frequency: 70, duration: .34, gain: .09, wave: 'sawtooth' },
@@ -336,7 +396,7 @@
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, profile.frequency * .62), now + profile.duration);
     gain.gain.setValueAtTime(profile.gain, now);
     gain.gain.exponentialRampToValueAtTime(.0001, now + profile.duration);
-    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.connect(gain).connect(audio.compressor || audioContext.destination);
     oscillator.start(now);
     oscillator.stop(now + profile.duration + .02);
   }
@@ -415,6 +475,7 @@
 
   function resetModules() {
     for (const moduleName of MODULES) state.modules[moduleName] = 0;
+    state.missileTimer = 0;
   }
 
   function startRun(stageIndex, mode) {
@@ -447,8 +508,10 @@
     state.stageScoreStart = state.score;
     state.stageScore = 0;
     state.playerX = WIDTH / 2;
-    state.playerY = HEIGHT - 112;
+    state.playerY = PLAYER_REAR_Y;
     state.pointerTargetX = state.playerX;
+    state.pointerTargetY = state.playerY;
+    state.missileTimer = 0;
     state.invulnerable = 1.2;
     state.respawnTimer = 0;
     resetEntities();
@@ -632,13 +695,13 @@
       if (roll < .40) return 'bomb';
       if (roll < .55) return 'score';
       if (roll < .70) return 'split';
-      if (roll < .85) return 'laser';
+      if (roll < .85) return 'missile';
       return 'spread';
     }
     if (roll < .12) return 'bomb';
     if (roll < .32) return 'score';
     if (roll < .55) return 'split';
-    if (roll < .78) return 'laser';
+    if (roll < .78) return 'missile';
     return 'spread';
   }
 
@@ -740,6 +803,7 @@
     const y = state.playerY - 30;
     spawnPlayerBullet(x - 8, y, 0, -900, { damage: 2, color: '#f4f8ff' });
     spawnPlayerBullet(x + 8, y, 0, -900, { damage: 2, color: '#f4f8ff' });
+    playWeaponSample('subBolt', 1);
 
     const splitLevel = state.modules.split;
     for (let index = 1; index <= splitLevel; index += 1) {
@@ -748,6 +812,7 @@
         spawnPlayerBullet(x, y, Math.sin(angle) * 900 * direction, -Math.cos(angle) * 900, { damage: 1.25 + index * .25, color: '#c5a7ff' });
       }
     }
+    if (splitLevel > 0) playWeaponSample('subBolt', splitLevel);
 
     const spreadLevel = state.modules.spread;
     const spreadCount = spreadLevel * 2;
@@ -755,12 +820,46 @@
       const angle = lerp(-.48, .48, (index + 1) / (spreadCount + 1));
       spawnPlayerBullet(x, y + 4, Math.sin(angle) * 780, -Math.cos(angle) * 780, { damage: 1.05 + spreadLevel * .2, color: '#ff7bc7', radius: 4 });
     }
+    if (spreadLevel > 0) playWeaponSample('subBolt', spreadLevel);
+  }
 
-    const laserLevel = state.modules.laser;
-    if (laserLevel > 0) {
-      spawnPlayerBullet(x, y - 8, 0, -1020, { damage: 2.2 + laserLevel * .75, color: '#72e7ff', radius: 7 + laserLevel * 2, kind: 'laser', life: .62 });
+  function findMissileTarget() {
+    const livingEnemies = state.enemies.filter((enemy) => !enemy.dead);
+    const candidates = livingEnemies.length ? livingEnemies : state.boss ? [state.boss] : [];
+    if (!candidates.length) return null;
+    return candidates.reduce((closest, candidate) => {
+      const closestDistance = Math.hypot(closest.x - state.playerX, closest.y - state.playerY);
+      const candidateDistance = Math.hypot(candidate.x - state.playerX, candidate.y - state.playerY);
+      return candidateDistance < closestDistance ? candidate : closest;
+    });
+  }
+
+  function spawnMissile() {
+    const target = findMissileTarget();
+    state.playerBullets.push({
+      x: state.playerX,
+      y: state.playerY - 30,
+      vx: 0,
+      vy: -MISSILE.speed,
+      damage: MISSILE.damage,
+      radius: 10,
+      kind: 'missile',
+      color: '#ff9a43',
+      life: MISSILE.life,
+      hitTimer: 0,
+      target
+    });
+  }
+
+  function updateMissileLauncher(dt) {
+    const level = state.modules.missile;
+    if (!level || state.respawnTimer > 0) return;
+    state.missileTimer -= dt;
+    while (state.missileTimer <= 0) {
+      spawnMissile();
+      playWeaponSample('bassPlasma', level);
+      state.missileTimer += MISSILE.intervals[level];
     }
-    if (state.soundEnabled && Math.random() < .35) playTone('shoot');
   }
 
   function useBomb() {
@@ -833,6 +932,7 @@
   function collectPickup(pickup) {
     if (MODULES.includes(pickup.type)) {
       state.modules[pickup.type] = Math.min(MAX_MODULE_LEVEL, state.modules[pickup.type] + 1);
+      if (pickup.type === 'missile') state.missileTimer = 0;
       showToast(`${pickup.type.toUpperCase()} +${state.modules[pickup.type]}`, 1.1);
     } else if (pickup.type === 'bomb') {
       state.bombs = Math.min(3, state.bombs + 1);
@@ -1113,12 +1213,17 @@
     if (state.invulnerable > 0) state.invulnerable = Math.max(0, state.invulnerable - dt);
     if (state.pointerActive) {
       state.playerX += (state.pointerTargetX - state.playerX) * Math.min(1, dt * 18);
+      state.playerY += (state.pointerTargetY - state.playerY) * Math.min(1, dt * 18);
     } else {
-      const direction = (state.keys.left ? -1 : 0) + (state.keys.right ? 1 : 0);
-      state.playerX += direction * SHIP.speed * dt;
+      const directionX = (state.keys.left ? -1 : 0) + (state.keys.right ? 1 : 0);
+      const directionY = (state.keys.up ? -1 : 0) + (state.keys.down ? 1 : 0);
+      const length = Math.hypot(directionX, directionY) || 1;
+      state.playerX += directionX / length * SHIP.speed * dt;
+      state.playerY += directionY / length * SHIP.speed * dt;
     }
     state.playerX = clamp(state.playerX, 32, WIDTH - 32);
-    state.playerY = HEIGHT - 112;
+    state.playerY = clamp(state.playerY, PLAYER_FORWARD_Y, PLAYER_REAR_Y);
+    updateMissileLauncher(dt);
     state.fireTimer -= dt;
     if (state.fireTimer <= 0) {
       firePlayer();
@@ -1129,6 +1234,18 @@
   function updatePlayerBullets(dt) {
     for (let index = state.playerBullets.length - 1; index >= 0; index -= 1) {
       const bullet = state.playerBullets[index];
+      if (bullet.kind === 'missile') {
+        const target = findMissileTarget();
+        if (target) {
+          const desiredAngle = Math.atan2(target.y - bullet.y, target.x - bullet.x);
+          const currentAngle = Math.atan2(bullet.vy, bullet.vx);
+          const difference = Math.atan2(Math.sin(desiredAngle - currentAngle), Math.cos(desiredAngle - currentAngle));
+          const nextAngle = currentAngle + clamp(difference, -MISSILE.turnRate * dt, MISSILE.turnRate * dt);
+          bullet.vx = Math.cos(nextAngle) * MISSILE.speed;
+          bullet.vy = Math.sin(nextAngle) * MISSILE.speed;
+          bullet.target = target;
+        }
+      }
       bullet.x += bullet.vx * dt;
       bullet.y += bullet.vy * dt;
       bullet.life -= dt;
@@ -1265,19 +1382,14 @@
       for (let enemyIndex = state.enemies.length - 1; enemyIndex >= 0; enemyIndex -= 1) {
         const enemy = state.enemies[enemyIndex];
         if (enemy.dead || !circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, enemyRect(enemy))) continue;
-        if (bullet.kind === 'laser' && bullet.hitTimer > 0) continue;
         damageEnemy(enemy, bullet.damage);
-        if (bullet.kind === 'laser') bullet.hitTimer = .12;
-        else consumed = true;
+        consumed = true;
         break;
       }
       if (!consumed && boss && circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, bossRect())) {
-        if (bullet.kind !== 'laser' || bullet.hitTimer <= 0) {
-          boss.hp -= bullet.damage;
-          spawnParticle(bullet.x, bullet.y, currentStage().boss.color, 1, 50);
-          if (bullet.kind === 'laser') bullet.hitTimer = .12;
-          else consumed = true;
-        }
+        boss.hp -= bullet.damage;
+        spawnParticle(bullet.x, bullet.y, currentStage().boss.color, 1, 50);
+        consumed = true;
       }
       if (consumed) state.playerBullets.splice(bulletIndex, 1);
     }
@@ -1318,7 +1430,9 @@
     state.invulnerable = 1.5;
     state.respawnTimer = .7;
     state.playerX = WIDTH / 2;
+    state.playerY = PLAYER_REAR_Y;
     state.pointerTargetX = state.playerX;
+    state.pointerTargetY = state.playerY;
     spawnParticle(state.playerX, state.playerY, '#ff789d', 22, 260);
     playTone('hit');
     showToast(state.lives > 0 ? 'MODULES LOST' : 'LAST LIFE', 1.1);
@@ -1448,9 +1562,17 @@
     context.save();
     context.fillStyle = bullet.color;
     context.shadowColor = bullet.color;
-    context.shadowBlur = bullet.kind === 'laser' ? 20 : 9;
-    if (bullet.kind === 'laser') {
-      context.fillRect(bullet.x - bullet.radius / 2, bullet.y - 34, bullet.radius, 68);
+    context.shadowBlur = bullet.kind === 'missile' ? 18 : 9;
+    if (bullet.kind === 'missile') {
+      const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
+      context.translate(bullet.x, bullet.y);
+      context.rotate(angle);
+      context.fillStyle = '#fff3d7';
+      context.beginPath();
+      context.moveTo(0, -15); context.lineTo(8, 11); context.lineTo(0, 7); context.lineTo(-8, 11); context.closePath();
+      context.fill();
+      context.fillStyle = '#ff7a2a';
+      context.fillRect(-3, 7, 6, 13);
     } else {
       context.beginPath();
       context.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
@@ -1566,8 +1688,8 @@
   }
 
   function drawPickup(pickup) {
-    const colors = { split: '#c5a7ff', laser: '#72e7ff', spread: '#ff7bc7', bomb: '#ffd86e', shield: '#77f0d0', score: '#f4f8ff' };
-    const labels = { split: 'S', laser: 'L', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
+    const colors = { split: '#c5a7ff', missile: '#ff9a43', spread: '#ff7bc7', bomb: '#ffd86e', shield: '#77f0d0', score: '#f4f8ff' };
+    const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
     context.rotate(pickup.angle);
@@ -1673,9 +1795,12 @@
     drawToast();
   }
 
-  function pointerToCanvas(clientX) {
+  function pointerToCanvas(clientX, clientY) {
     const bounds = canvas.getBoundingClientRect();
-    return clamp(((clientX - bounds.left) / bounds.width) * WIDTH, 32, WIDTH - 32);
+    return {
+      x: clamp(((clientX - bounds.left) / bounds.width) * WIDTH, 32, WIDTH - 32),
+      y: clamp(((clientY - bounds.top) / bounds.height) * HEIGHT, PLAYER_FORWARD_Y, PLAYER_REAR_Y)
+    };
   }
 
   function startPointer(event) {
@@ -1683,14 +1808,18 @@
     event.preventDefault();
     state.pointerActive = true;
     state.pointerId = event.pointerId;
-    state.pointerTargetX = pointerToCanvas(event.clientX);
+    const target = pointerToCanvas(event.clientX, event.clientY);
+    state.pointerTargetX = target.x;
+    state.pointerTargetY = target.y;
     canvas.setPointerCapture?.(event.pointerId);
   }
 
   function movePointer(event) {
     if (!state.pointerActive || state.pointerId !== event.pointerId) return;
     event.preventDefault();
-    state.pointerTargetX = pointerToCanvas(event.clientX);
+    const target = pointerToCanvas(event.clientX, event.clientY);
+    state.pointerTargetX = target.x;
+    state.pointerTargetY = target.y;
   }
 
   function endPointer(event) {
@@ -1702,9 +1831,11 @@
 
   function handleKey(event, pressed) {
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'a', 'd', ' ', 'x', 'p', 'escape'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'w', 'a', 's', 'd', ' ', 'x', 'p', 'escape'].includes(key)) event.preventDefault();
     if (key === 'arrowleft' || key === 'a') state.keys.left = pressed;
     if (key === 'arrowright' || key === 'd') state.keys.right = pressed;
+    if (key === 'arrowup' || key === 'w') state.keys.up = pressed;
+    if (key === 'arrowdown' || key === 's') state.keys.down = pressed;
     if (!pressed || event.repeat) return;
     if (key === ' ' || key === 'x') useBomb();
     if (key === 'p' || key === 'escape') togglePause();
@@ -1755,10 +1886,10 @@
   startRunButton.disabled = true;
   startRunButton.textContent = 'LOADING…';
   practiceButton.disabled = true;
-  skins.ready.then(() => { assetsReady = true; startRunButton.disabled = false; startRunButton.textContent = 'PLAY ALL STAGES'; renderStageButtons(); updateHud(); });
+  Promise.all([skins.ready, preloadWeaponSamples()]).then(() => { assetsReady = true; startRunButton.disabled = false; startRunButton.textContent = 'PLAY ALL STAGES'; renderStageButtons(); updateHud(); });
   document.addEventListener('visibilitychange', () => {
     state.lastTime = performance.now();
-    state.keys.left = state.keys.right = false;
+    state.keys.left = state.keys.right = state.keys.up = state.keys.down = false;
     state.pointerActive = false;
   });
   requestAnimationFrame(loop);
