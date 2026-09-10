@@ -8,8 +8,10 @@
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 3;
-  const PICKUP_DROP_RATE = .30;
-  const TURRET_PICKUP_DROP_RATE = .35;
+  const PICKUP_DROP_RATE = .15;
+  const TURRET_PICKUP_DROP_RATE = .175;
+  const MOB_BULLET_COLOR = '#FF781F';
+  const MOB_BULLET_SPEED_MULTIPLIER = 3;
   const PICKUP_SPEEDS = { shield: 440, bomb: 400, laser: 360, spread: 320, split: 280, score: 240 };
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
@@ -600,18 +602,19 @@
       vx,
       vy,
       radius: options.radius || 6,
+      swept: options.swept === true,
       color: options.color || '#ff789d',
       orbit: options.orbit || null
     });
   }
 
-  function spawnAimedBurst(x, y, count, spread, speed) {
+  function spawnAimedBurst(x, y, count, spread, speed, options = {}) {
     const baseAngle = Math.atan2(state.playerY - y, state.playerX - x);
     const profile = currentProfile();
     for (let index = 0; index < count; index += 1) {
       const ratio = count === 1 ? 0 : index / (count - 1) - .5;
       const angle = baseAngle + ratio * spread;
-      spawnEnemyBullet(x, y, Math.cos(angle) * speed * profile.bulletSpeed, Math.sin(angle) * speed * profile.bulletSpeed, { color: currentStage().palette.accent2 });
+      spawnEnemyBullet(x, y, Math.cos(angle) * speed * profile.bulletSpeed, Math.sin(angle) * speed * profile.bulletSpeed, { color: currentStage().palette.accent2, ...options });
     }
   }
 
@@ -1098,7 +1101,7 @@
       }
       enemy.shootTimer -= dt;
       if (enemy.shootTimer <= 0 && ['shooter', 'turret', 'orbiter'].includes(enemy.type)) {
-        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, 170 + state.stageIndex * 12);
+        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, (170 + state.stageIndex * 12) * MOB_BULLET_SPEED_MULTIPLIER, { color: MOB_BULLET_COLOR, swept: true });
         enemy.shootTimer = (enemy.type === 'turret' ? 1.9 : 2.4) / profile.bulletDensity;
       }
       if (enemy.y > HEIGHT + 120 || enemy.x < -150 || enemy.x > WIDTH + 150) state.enemies.splice(index, 1);
@@ -1137,6 +1140,8 @@
   function updateEnemyBullets(dt) {
     for (let index = state.enemyBullets.length - 1; index >= 0; index -= 1) {
       const bullet = state.enemyBullets[index];
+      bullet.previousX = bullet.x;
+      bullet.previousY = bullet.y;
       if (bullet.orbit) {
         bullet.orbit.angle += bullet.orbit.speed * dt;
         bullet.x = bullet.orbit.cx + Math.cos(bullet.orbit.angle) * bullet.orbit.radius;
@@ -1218,6 +1223,31 @@
     return { x: state.playerX, y: state.playerY, width: SHIP.width, height: SHIP.height };
   }
 
+  function sweptBulletCollision(bullet, rect) {
+    const ax = bullet.previousX ?? bullet.x, ay = bullet.previousY ?? bullet.y;
+    if (circleRectCollision(bullet, rect) || circleRectCollision({ x: ax, y: ay, radius: bullet.radius }, rect)) return true;
+    const dx = bullet.x - ax, dy = bullet.y - ay;
+    const left = rect.x - rect.width / 2, right = rect.x + rect.width / 2;
+    const top = rect.y - rect.height / 2, bottom = rect.y + rect.height / 2;
+    // Segment/rectangle intersection, then exact rounded corners. Do not
+    // expand the hitbox to an oversized rectangular approximation.
+    let enter = 0, leave = 1;
+    for (const [start, delta, low, high] of [[ax, dx, left, right], [ay, dy, top, bottom]]) {
+      if (delta === 0) { if (start < low || start > high) { enter = 2; break; } }
+      else {
+        const a = (low - start) / delta, b = (high - start) / delta;
+        enter = Math.max(enter, Math.min(a, b)); leave = Math.min(leave, Math.max(a, b));
+      }
+    }
+    if (enter <= leave) return true;
+    const lengthSquared = dx * dx + dy * dy;
+    if (!lengthSquared) return false;
+    return [[left, top], [right, top], [left, bottom], [right, bottom]].some(([x, y]) => {
+      const t = clamp(((x - ax) * dx + (y - ay) * dy) / lengthSquared, 0, 1);
+      return Math.hypot(ax + t * dx - x, ay + t * dy - y) <= bullet.radius;
+    });
+  }
+
   function enemyRect(enemy) {
     return { x: enemy.x, y: enemy.y, width: enemy.radius * 2, height: enemy.radius * 2 };
   }
@@ -1256,7 +1286,7 @@
     const rect = playerRect();
     for (let index = state.enemyBullets.length - 1; index >= 0; index -= 1) {
       const bullet = state.enemyBullets[index];
-      if (circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, rect)) {
+      if (bullet.swept ? sweptBulletCollision(bullet, rect) : circleRectCollision(bullet, rect)) {
         state.enemyBullets.splice(index, 1);
         takeHit();
         if (state.screen !== 'playing') return;
