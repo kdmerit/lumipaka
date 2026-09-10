@@ -14,6 +14,10 @@
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   const MODULES = ['split', 'laser', 'spread'];
+  const skins = window.StellarSkins;
+  const SKIN_VARIANTS = { scout: [1, 3], zigzag: [7], shooter: [2, 6], charger: [5], turret: [4, 8], orbiter: [9] };
+  const skinCounts = {};
+  let assetsReady = false;
   const SHIP = { width: 34, height: 48, speed: 520, hitRadius: 11 };
 
   const STAGE_NAMES = [
@@ -220,6 +224,11 @@
     score: 0,
     lives: 3,
     bombs: 2,
+    bombCooldown: 0,
+    bombProjectile: null,
+    bombEffect: null,
+    pendingStageClear: false,
+    visualTime: 0,
     shield: 0,
     modules: { split: 0, laser: 0, spread: 0 },
     playerX: WIDTH / 2,
@@ -377,7 +386,7 @@
       stageGrid.appendChild(button);
     }
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${STAGES[state.selectedStage].name}`;
-    practiceButton.disabled = state.selectedStage > state.progress.unlockedStage;
+    practiceButton.disabled = !assetsReady || state.selectedStage > state.progress.unlockedStage;
     setupProgress.textContent = `CLEARED ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · cleared stages unlock practice`;
   }
 
@@ -389,6 +398,9 @@
   }
 
   function resetEntities() {
+    state.bombProjectile = null;
+    state.bombEffect = null;
+    state.pendingStageClear = false;
     state.enemies.length = 0;
     state.playerBullets.length = 0;
     state.enemyBullets.length = 0;
@@ -404,6 +416,9 @@
   }
 
   function startRun(stageIndex, mode) {
+    if (!assetsReady) return;
+    state.bombCooldown = 0;
+    for (const key of Object.keys(skinCounts)) delete skinCounts[key];
     ensureAudio();
     state.runMode = mode;
     state.score = 0;
@@ -461,6 +476,9 @@
   }
 
   function finishRun(result) {
+    state.bombProjectile = null;
+    state.bombEffect = null;
+    state.pendingStageClear = false;
     state.screen = 'result';
     if (state.runMode === 'run' && result === 'clear') state.progress.bestRunScore = Math.max(state.progress.bestRunScore, state.score);
     saveProgress();
@@ -525,12 +543,18 @@
       livesElement.setAttribute('aria-label', `남은 목숨 ${state.lives}개`);
     }
     for (const element of [bombCountElement, toolBombCountElement]) {
-      if (element.dataset.count === String(state.bombs)) continue;
-      element.innerHTML = `${BOMB_ICON}<span>x${state.bombs}</span>`;
-      element.dataset.count = String(state.bombs);
+      const icon = skins.images.has('bomb') ? `<img src="${skins.urls.get('bomb')}" alt="" />` : BOMB_ICON;
+      const key = `${state.bombs}-${skins.images.has('bomb')}`;
+      if (element.dataset.count === key) continue;
+      element.innerHTML = `${icon}<span>x${state.bombs}</span>`;
+      element.dataset.count = key;
       element.setAttribute('aria-label', `폭탄 ${state.bombs}개`);
     }
     bombButton.setAttribute('aria-label', `폭탄 사용, 남은 폭탄 ${state.bombs}개`);
+    let cooldownLabel = bombButton.querySelector('.bomb-cooldown');
+    if (!cooldownLabel) { cooldownLabel = document.createElement('span'); cooldownLabel.className = 'bomb-cooldown'; bombButton.append(cooldownLabel); }
+    cooldownLabel.textContent = state.bombCooldown > 0 ? `${Math.ceil(state.bombCooldown)}s` : '';
+    if (state.bombCooldown > 0) bombButton.setAttribute('aria-label', `폭탄 ${state.bombs}개, 재사용까지 ${Math.ceil(state.bombCooldown)}초`);
     shieldStatusElement.textContent = state.shield ? 'READY' : 'EMPTY';
     shieldStatusElement.style.color = state.shield ? 'var(--yellow)' : 'var(--muted)';
     for (const moduleName of MODULES) {
@@ -539,7 +563,7 @@
       element.innerHTML = `${moduleName.toUpperCase()} <b>${level}</b>`;
       element.classList.toggle('active', level > 0);
     }
-    bombButton.disabled = state.screen !== 'playing' || state.bombs <= 0;
+    bombButton.disabled = state.screen !== 'playing' || state.bombs <= 0 || state.bombCooldown > 0 || state.pendingStageClear;
     pauseButton.disabled = !['playing', 'paused'].includes(state.screen);
     if (state.screen !== 'paused') pauseButton.setAttribute('aria-pressed', 'false');
     soundButton.textContent = state.soundEnabled ? 'SOUND ON' : 'SOUND OFF';
@@ -616,9 +640,13 @@
   }
 
   function spawnEnemy(type, x, y, options = {}) {
+    const variants = SKIN_VARIANTS[type] || [1];
+    const skinId = variants[(skinCounts[type] || 0) % variants.length];
+    skinCounts[type] = (skinCounts[type] || 0) + 1;
     const stats = ENEMY_STATS[type] || ENEMY_STATS.scout;
     const stageScale = 1 + state.stageIndex * .08;
     state.enemies.push({
+      skinId,
       type,
       x,
       y,
@@ -733,8 +761,17 @@
   }
 
   function useBomb() {
-    if (state.screen !== 'playing' || state.bombs <= 0 || state.respawnTimer > 0) return;
+    if (state.screen !== 'playing' || state.bombs <= 0 || state.respawnTimer > 0 || state.bombCooldown > 0 || state.pendingStageClear) return;
     state.bombs -= 1;
+    state.bombCooldown = 10;
+    state.bombProjectile = { x: state.playerX, y: state.playerY - 24 };
+    updateHud();
+  }
+
+  function detonateBomb(projectile) {
+    const bursts = [{ x: projectile.x, y: 640, start: 0, size: 300 }];
+    for (let i = 0; i < 15; i++) bursts.push({ x: 85 + ((i * 197) % 550), y: 150 + ((i * 277) % 940), start: .12 + i * 1.88 / 14, size: 190 + (i % 4) * 35 });
+    state.bombEffect = { elapsed: 0, bursts };
     for (const bullet of state.enemyBullets) spawnParticle(bullet.x, bullet.y, '#ffd86e', 1, 80);
     state.enemyBullets.length = 0;
     state.hazards.length = 0;
@@ -743,6 +780,51 @@
     showToast('BOMB CLEAR', 1.2);
     playTone('bomb');
     updateHud();
+  }
+
+  function updateBomb(dt) {
+    state.bombCooldown = Math.max(0, state.bombCooldown - dt);
+    if (state.bombEffect) {
+      state.bombEffect.elapsed += dt;
+      if (state.bombEffect.elapsed >= 2.5) {
+        state.bombEffect = null;
+        if (state.pendingStageClear) { state.pendingStageClear = false; endStage(); return; }
+      }
+    }
+    if (state.bombProjectile) {
+      state.bombProjectile.y -= 300 * dt;
+      if (state.bombProjectile.y <= 640) {
+        const projectile = state.bombProjectile;
+        state.bombProjectile = null;
+        detonateBomb(projectile);
+      }
+    }
+  }
+
+  function clearBombThreats() {
+    if (!state.bombEffect) return;
+    state.enemyBullets.length = 0;
+    state.hazards.length = 0;
+  }
+
+  function drawBomb() {
+    const p = state.bombProjectile;
+    if (p && !skins.draw(context, 'bomb', p.x, p.y, 28, 64)) {
+      context.fillStyle = '#ffd86e'; context.fillRect(p.x - 9, p.y - 24, 18, 48);
+    }
+    if (!state.bombEffect) return;
+    for (const burst of state.bombEffect.bursts) {
+      const age = state.bombEffect.elapsed - burst.start;
+      if (age < 0 || age >= .5) continue;
+      const frame = age < .08 ? 1 : age < .18 ? 2 : 3;
+      const size = burst.size * (.45 + .55 * Math.min(1, age / .32));
+      context.save();
+      context.globalAlpha = age < .32 ? .9 : .9 * (1 - (age - .32) / .18);
+      if (!skins.draw(context, `explosion-${frame}`, burst.x, burst.y, size, size)) {
+        context.fillStyle = '#ffd86e'; context.beginPath(); context.arc(burst.x, burst.y, size / 2, 0, Math.PI * 2); context.fill();
+      }
+      context.restore();
+    }
   }
 
   function collectPickup(pickup) {
@@ -944,7 +1026,8 @@
     state.hazards.length = 0;
     state.boss = null;
     playTone('clear');
-    endStage();
+    if (state.bombEffect) { state.pendingStageClear = true; state.stagePhase = 'bomb-clear'; }
+    else { state.bombProjectile = null; endStage(); }
   }
 
   function updateWave(dt) {
@@ -1189,6 +1272,7 @@
   }
 
   function takeHit() {
+    if (state.bombEffect) return;
     if (state.screen !== 'playing' || state.respawnTimer > 0 || state.invulnerable > 0) return;
     if (state.shield) {
       state.shield = 0;
@@ -1227,15 +1311,21 @@
   }
 
   function update(dt) {
+    if (document.hidden) return;
     updateStars(dt * (state.screen === 'playing' ? 1 : .28));
     if (state.toastTimer > 0) state.toastTimer = Math.max(0, state.toastTimer - dt);
     if (state.screen !== 'playing') return;
+    state.visualTime += dt;
+    updateBomb(dt);
+    if (state.screen !== 'playing') return;
+    if (state.pendingStageClear) { clearBombThreats(); updateHud(); return; }
     updatePlayer(dt);
     updateStage(dt);
     updateEnemies(dt);
     updatePlayerBullets(dt);
     updateEnemyBullets(dt);
     updatePickups(dt);
+    clearBombThreats();
     updateHazards(dt);
     updateParticles(dt);
     updateCollisions();
@@ -1276,6 +1366,18 @@
     const palette = currentStage().palette;
     context.save();
     context.translate(x, y);
+    if (skins.images.has('fighter')) {
+      for (let i = 0; i < 2; i++) {
+        const wave = Math.sin(state.visualTime * 23 + i * 2.3);
+        const length = 30 * (1 + wave * .15);
+        context.save(); context.globalAlpha = .92 + wave * .08;
+        skins.draw(context, 'flame', i === 0 ? -10 : 10, 27 + length / 2, 10 * (1 + wave * .08), length);
+        context.restore();
+      }
+      skins.draw(context, 'fighter', 0, 0, 58, 66);
+      if (state.shield) { context.strokeStyle = '#ffd86e'; context.lineWidth = 3; context.beginPath(); context.arc(0, 0, 35, 0, Math.PI * 2); context.stroke(); }
+      context.restore(); return;
+    }
     context.shadowColor = palette.accent;
     context.shadowBlur = 22;
     context.fillStyle = '#f4f8ff';
@@ -1342,6 +1444,7 @@
     context.save();
     context.translate(enemy.x, enemy.y);
     context.rotate(Math.sin(enemy.age * 2 + enemy.phase) * .08);
+    if (skins.draw(context, `enemy-${enemy.skinId}`, 0, 0, enemy.radius * 2.5, enemy.radius * 2.5)) { context.restore(); return; }
     context.fillStyle = enemy.color;
     context.shadowColor = enemy.color;
     context.shadowBlur = 14;
@@ -1390,6 +1493,8 @@
     const profile = currentStage().boss;
     context.save();
     context.translate(boss.x, boss.y);
+    const hasSkin = skins.draw(context, `boss-${state.stageIndex + 1}`, 0, 0, state.stageIndex === 9 ? 260 : 180, state.stageIndex === 9 ? 210 : 180);
+    if (!hasSkin) {
     context.fillStyle = profile.color;
     context.shadowColor = profile.color;
     context.shadowBlur = 28;
@@ -1411,8 +1516,8 @@
     context.beginPath();
     context.arc(0, 4, 36 + Math.sin(boss.moveTime * 3) * 3, 0, Math.PI * 2);
     context.stroke();
+    }
     context.restore();
-
     const barWidth = 520;
     const barX = (WIDTH - barWidth) / 2;
     context.fillStyle = 'rgba(0,0,0,.45)';
@@ -1534,6 +1639,7 @@
       context.restore();
     }
     if (state.screen !== 'setup') drawPlayer();
+    drawBomb();
     drawToast();
   }
 
@@ -1569,7 +1675,7 @@
     if (['arrowleft', 'arrowright', 'a', 'd', ' ', 'x', 'p', 'escape'].includes(key)) event.preventDefault();
     if (key === 'arrowleft' || key === 'a') state.keys.left = pressed;
     if (key === 'arrowright' || key === 'd') state.keys.right = pressed;
-    if (!pressed) return;
+    if (!pressed || event.repeat) return;
     if (key === ' ' || key === 'x') useBomb();
     if (key === 'p' || key === 'escape') togglePause();
   }
@@ -1616,5 +1722,14 @@
   initializeStars();
   renderStageButtons();
   updateHud();
+  startRunButton.disabled = true;
+  startRunButton.textContent = 'LOADING…';
+  practiceButton.disabled = true;
+  skins.ready.then(() => { assetsReady = true; startRunButton.disabled = false; startRunButton.textContent = 'PLAY ALL STAGES'; renderStageButtons(); updateHud(); });
+  document.addEventListener('visibilitychange', () => {
+    state.lastTime = performance.now();
+    state.keys.left = state.keys.right = false;
+    state.pointerActive = false;
+  });
   requestAnimationFrame(loop);
 })();

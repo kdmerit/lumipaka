@@ -95,6 +95,10 @@ h1 em { color: var(--cyan); font-style: normal; }
 .heart svg { fill: currentColor; stroke: currentColor; stroke-width: 1; }
 .heart.empty { opacity: .35; }
 .heart.empty svg { fill: none; }
+.bomb-display img { width: 18px; height: 26px; object-fit: contain; }
+.bomb-status { justify-content: center; }
+.bomb-status .bomb-display { font-size: 16px; }
+.bomb-cooldown { margin-left: 5px; font-variant-numeric: tabular-nums; }
 .setup-actions > button { flex: 1 1 160px; max-width: 220px; }
 
 html[data-lumipaka-fullscreen="true"] body { overflow: hidden; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Stellar Rush</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-09T07%3A16%3A25.710Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-10T06%3A20%3A10.146Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -16,7 +16,7 @@
 
       <div class="status-row" aria-label="목숨과 자원">
         <div class="status-group"><span class="hud-label">LIVES</span><strong id="lives" role="img" aria-label="남은 목숨 3개"></strong></div>
-        <div class="status-group"><span class="hud-label">BOMBS</span><strong id="bomb-count" class="bomb-display" role="img" aria-label="폭탄 2개"></strong></div>
+        <div class="status-group bomb-status"><strong id="bomb-count" class="bomb-display" role="img" aria-label="폭탄 2개"></strong></div>
         <div class="status-group shield-status"><span class="hud-label">SHIELD</span><strong id="shield-status">READY</strong></div>
       </div>
 
@@ -77,9 +77,10 @@
         <button id="pause-button" class="pause-button" type="button" aria-pressed="false" disabled>PAUSE</button>
         <button id="sound-button" class="sound-button" type="button" aria-pressed="true">SOUND ON</button>
       </div>
-      <p class="hint">드래그 또는 ← → / A D로 이동 · 자동 연사 · Space / X / BOMB로 폭탄 · P / ESC 일시정지</p>
+      <p class="hint">드래그 또는 ← → / A D로 이동 · 자동 연사 · Space / X / 폭탄 아이콘으로 폭탄 · P / ESC 일시정지</p>
     </main>
-    <script src="./game.js?v=2026-09-09T07%3A16%3A25.710Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-09T07%3A16%3A25.710Z"></script>
+    <script src="./skins.js?v=2026-09-10T06%3A20%3A10.146Z"></script>
+    <script src="./game.js?v=2026-09-10T06%3A20%3A10.146Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-10T06%3A20%3A10.146Z"></script>
 </body>
 </html>
