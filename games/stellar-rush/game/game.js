@@ -19,9 +19,11 @@
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   const MODULES = ['split', 'missile', 'spread'];
   const MISSILE = { speed: 700, damage: 14, turnRate: 6, life: 2, intervals: [0, 2, 1, .5] };
-  const WEAPON_SAMPLES = {
+  const AUDIO_SAMPLES = {
     subBolt: './audio-samples/low-03-sub-bolt.wav',
-    bassPlasma: './audio-samples/low-01-bass-plasma.wav'
+    bassPlasma: './audio-samples/low-01-bass-plasma.wav',
+    itemGet: './audio-samples/item_get2.wav', bombExplosion: './audio-samples/bomb_explosion.wav',
+    victory: './audio-samples/victory-01-serene-spark.wav'
   };
   const skins = window.StellarSkins;
   const SKIN_VARIANTS = { scout: [1, 3], zigzag: [7], shooter: [2, 6], charger: [5], turret: [4, 8], orbiter: [9] };
@@ -152,6 +154,7 @@
   const stageMedalElement = $('#stage-medal');
   const stageCopy = $('#stage-copy');
   const stageScoreLine = $('#stage-score-line');
+  const stageTotalScoreLine = $('#stage-total-score-line');
   const resultEyebrow = $('#result-eyebrow');
   const resultTitle = $('#result-title');
   const resultScore = $('#result-score');
@@ -237,6 +240,7 @@
     bombProjectile: null,
     bombEffect: null,
     pendingStageClear: false,
+    stageClearDelay: 0,
     visualTime: 0,
     shield: 0,
     modules: { split: 0, missile: 0, spread: 0 },
@@ -332,7 +336,7 @@
   }
 
   function preloadWeaponSamples() {
-    return Promise.all(Object.entries(WEAPON_SAMPLES).map(async ([name, source]) => {
+    return Promise.all(Object.entries(AUDIO_SAMPLES).map(async ([name, source]) => {
       try {
         const response = await fetch(source);
         if (!response.ok) return;
@@ -374,6 +378,14 @@
     gain.gain.value = name === 'bassPlasma' ? .14 : .10;
     source.connect(gain).connect(audio.compressor || audioContext.destination);
     source.start();
+  }
+
+  function playGameSample(name, gainValue = .18) {
+    const audioContext = ensureAudio(); const buffer = audio.samples.get(name);
+    if (!audioContext || !buffer) return;
+    const source = audioContext.createBufferSource(); const gain = audioContext.createGain();
+    source.buffer = buffer; gain.gain.value = gainValue;
+    source.connect(gain).connect(audio.compressor || audioContext.destination); source.start();
   }
 
   function playTone(type) {
@@ -463,6 +475,7 @@
     state.bombProjectile = null;
     state.bombEffect = null;
     state.pendingStageClear = false;
+    state.stageClearDelay = 0;
     state.enemies.length = 0;
     state.playerBullets.length = 0;
     state.enemyBullets.length = 0;
@@ -529,9 +542,10 @@
     stageMedalElement.textContent = stageMedalValue();
     stageCopy.textContent = state.stageIndex === STAGE_COUNT - 1 ? '모든 궤도를 돌파했습니다.' : '다음 궤도로 진입합니다.';
     stageScoreLine.textContent = `STAGE SCORE ${formatScore(state.stageScore)}`;
+    stageTotalScoreLine.textContent = `SCORE ${formatScore(state.score)}`;
     nextStageButton.textContent = state.stageIndex === STAGE_COUNT - 1 ? 'VIEW RESULT' : state.runMode === 'run' ? 'NEXT STAGE' : 'STAGE SELECT';
     stageOverlay.hidden = false;
-    playTone('clear');
+    playGameSample('victory', .20);
     updateHud();
   }
 
@@ -866,7 +880,7 @@
     if (state.screen !== 'playing' || state.bombs <= 0 || state.respawnTimer > 0 || state.bombCooldown > 0 || state.pendingStageClear) return;
     state.bombs -= 1;
     state.bombCooldown = 10;
-    state.bombProjectile = { x: state.playerX, y: state.playerY - 24 };
+    state.bombProjectile = { x: state.playerX, y: state.playerY - 24, startY: state.playerY - 24, elapsed: 0 };
     updateHud();
   }
 
@@ -877,10 +891,11 @@
     for (const bullet of state.enemyBullets) spawnParticle(bullet.x, bullet.y, '#ffd86e', 1, 80);
     state.enemyBullets.length = 0;
     state.hazards.length = 0;
+    state.invulnerable = 1;
     for (const enemy of state.enemies) damageEnemy(enemy, 18 + state.stageIndex * 3);
     if (state.boss) state.boss.hp -= 90 + state.stageIndex * 16;
     showToast('BOMB CLEAR', 1.2);
-    playTone('bomb');
+    playGameSample('bombExplosion', .24);
     updateHud();
   }
 
@@ -890,12 +905,18 @@
       state.bombEffect.elapsed += dt;
       if (state.bombEffect.elapsed >= 2.5) {
         state.bombEffect = null;
-        if (state.pendingStageClear) { state.pendingStageClear = false; endStage(); return; }
+        if (state.pendingStageClear) { state.stageClearDelay = 1; }
       }
     }
+    if (state.stageClearDelay > 0) {
+      state.stageClearDelay = Math.max(0, state.stageClearDelay - dt);
+      if (state.stageClearDelay === 0) { state.pendingStageClear = false; endStage(); return; }
+    }
     if (state.bombProjectile) {
-      state.bombProjectile.y -= 300 * dt;
-      if (state.bombProjectile.y <= 640) {
+      state.bombProjectile.elapsed += dt;
+      const progress = Math.min(1, state.bombProjectile.elapsed / .5);
+      state.bombProjectile.y = state.bombProjectile.startY + (640 - state.bombProjectile.startY) * progress;
+      if (progress >= 1) {
         const projectile = state.bombProjectile;
         state.bombProjectile = null;
         detonateBomb(projectile);
@@ -915,6 +936,8 @@
       context.fillStyle = '#ffd86e'; context.fillRect(p.x - 9, p.y - 24, 18, 48);
     }
     if (!state.bombEffect) return;
+    const flash = state.bombEffect.elapsed % .17;
+    if (state.bombEffect.elapsed < .51 && flash < .075) { context.save(); context.fillStyle = 'rgba(255,255,255,.72)'; context.fillRect(0, 0, WIDTH, HEIGHT); context.restore(); }
     for (const burst of state.bombEffect.bursts) {
       const age = state.bombEffect.elapsed - burst.start;
       if (age < 0 || age >= .5) continue;
@@ -945,7 +968,7 @@
       state.stageScore += 500;
       showToast('SCORE +500', 1.1);
     }
-    playTone('pickup');
+    playGameSample('itemGet', .16);
     updateHud();
   }
 
@@ -1127,10 +1150,8 @@
     spawnParticle(boss.x, boss.y, currentStage().boss.color, 60, 300);
     state.enemyBullets.length = 0;
     state.hazards.length = 0;
-    state.boss = null;
-    playTone('clear');
-    if (state.bombEffect) { state.pendingStageClear = true; state.stagePhase = 'bomb-clear'; }
-    else { state.bombProjectile = null; endStage(); }
+    state.boss = null; state.bombProjectile = null; state.bombEffect = { elapsed: 0, bursts: Array.from({ length: 9 }, (_, i) => ({ x: boss.x + ((i % 3) - 1) * 90, y: boss.y + (Math.floor(i / 3) - 1) * 85, start: i * .13, size: 260 })) };
+    state.pendingStageClear = true; state.stagePhase = 'boss-clear'; playGameSample('bombExplosion', .24);
   }
 
   function updateWave(dt) {
@@ -1414,7 +1435,6 @@
   }
 
   function takeHit() {
-    if (state.bombEffect) return;
     if (state.screen !== 'playing' || state.respawnTimer > 0 || state.invulnerable > 0) return;
     if (state.shield) {
       state.shield = 0;
@@ -1688,11 +1708,12 @@
   }
 
   function drawPickup(pickup) {
-    const colors = { split: '#c5a7ff', missile: '#ff9a43', spread: '#ff7bc7', bomb: '#ffd86e', shield: '#77f0d0', score: '#f4f8ff' };
+    const colors = { split: '#c5a7ff', missile: '#ff9a43', spread: '#ff7bc7', bomb: '#ff4c5e', shield: '#77f0d0', score: '#f4d34d' };
     const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
     context.rotate(pickup.angle);
+    if (skins.draw(context, `pickup-${pickup.type}`, 0, 0, 42, 42)) { context.restore(); return; }
     context.fillStyle = colors[pickup.type];
     context.shadowColor = colors[pickup.type];
     context.shadowBlur = 16;

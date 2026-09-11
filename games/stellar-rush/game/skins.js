@@ -1,5 +1,5 @@
 (() => {
-  const ids = ['fighter', 'flame', 'bomb', ...Array.from({length: 3}, (_, i) => `explosion-${i + 1}`), ...Array.from({length: 9}, (_, i) => `enemy-${i + 1}`), ...Array.from({length: 10}, (_, i) => `boss-${i + 1}`)];
+  const ids = ['fighter', 'flame', 'bomb', ...['shield', 'split', 'missile', 'spread', 'bomb', 'score'].map(id => `pickup-${id}`), ...Array.from({length: 3}, (_, i) => `explosion-${i + 1}`), ...Array.from({length: 9}, (_, i) => `enemy-${i + 1}`), ...Array.from({length: 10}, (_, i) => `boss-${i + 1}`)];
   const images = new Map();
   const version = document.currentScript ? new URL(document.currentScript.src).search : '';
   const urls = new Map(ids.map(id => [id, new URL(`./sprites/${id}.png`, document.baseURI).href + version]));
