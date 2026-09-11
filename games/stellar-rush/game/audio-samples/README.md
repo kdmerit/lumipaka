@@ -15,10 +15,8 @@
 
 | 파일 | 분위기 |
 | --- | --- |
-| `victory-01-neon-fanfare.wav` | 빠르고 밝은 네온 팡파르 |
-| `victory-02-starlight-ascent.wav` | 위로 치고 올라가는 별빛 멜로디 |
-| `victory-03-comet-parade.wav` | 경쾌하고 리듬감 있는 혜성 퍼레이드 |
-| `victory-04-orbit-triumph.wav` | 묵직하게 마무리되는 궤도 승리 테마 |
-| `victory-05-galactic-crown.wav` | 최종 스테이지에도 어울리는 웅장한 상승 테마 |
+| `victory-01-imperial-sunrise.wav` | 행진감 있는 장엄한 상승 팡파르 |
+| `victory-02-cosmic-citadel.wav` | 낮은 음에서 치고 올라오는 우주 요새 테마 |
+| `victory-03-aurora-crown.wav` | 밝고 강하게 절정으로 향하는 오로라 테마 |
 
 모든 파일은 44.1kHz, mono, 16-bit PCM WAV입니다. 재생성 스크립트는 `games/stellar-rush/tools/generate-victory-samples.cjs`에 있습니다.
