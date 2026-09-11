@@ -15,6 +15,6 @@
 
 | 파일 | 분위기 |
 | --- | --- |
-| `victory-01-starlight-homecoming.wav` | 한 번 들으면 기억되는 상승·회귀 선율의 별빛 귀환 테마 |
+| `victory-01-serene-spark.wav` | 하프와 현악으로 고요하게 시작해 플루트·첼레스타로 밝게 마무리되는 테마 |
 
-모든 파일은 약 5초 길이의 44.1kHz, stereo, 16-bit PCM WAV입니다. Virtual Playing Orchestra의 실제 현악·금관·팀파니 샘플을 새 멜로디로 편곡한 결과물이며, 원본 샘플 파일은 배포하지 않습니다. 재생성 스크립트는 `games/stellar-rush/tools/render-vpo-victories.py`에 있습니다.
+파일은 약 5초 길이의 44.1kHz, stereo, 16-bit PCM WAV입니다. Virtual Playing Orchestra의 실제 현악·하프·플루트·첼레스타 샘플을 새 멜로디로 편곡한 결과물이며, 원본 샘플 파일은 배포하지 않습니다. 재생성 스크립트는 `games/stellar-rush/tools/render-vpo-victories.py`에 있습니다.
