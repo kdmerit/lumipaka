@@ -7,9 +7,9 @@
   const CHARACTER = 'stellar-fighter';
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
-  const MAX_MODULE_LEVEL = 3;
-  const PICKUP_DROP_RATE = .15;
-  const TURRET_PICKUP_DROP_RATE = .175;
+  const MAX_MODULE_LEVEL = 2;
+  const PICKUP_DROP_RATE = .075;
+  const TURRET_PICKUP_DROP_RATE = .0875;
   const MOB_BULLET_COLOR = '#FF781F';
   const MOB_BULLET_SPEED_MULTIPLIER = 3;
   const PLAYER_REAR_Y = HEIGHT - 112;
@@ -880,7 +880,7 @@
     if (state.screen !== 'playing' || state.bombs <= 0 || state.respawnTimer > 0 || state.bombCooldown > 0 || state.pendingStageClear) return;
     state.bombs -= 1;
     state.bombCooldown = 10;
-    state.bombProjectile = { x: state.playerX, y: state.playerY - 24, startY: state.playerY - 24, elapsed: 0 };
+    detonateBomb({ x: state.playerX });
     updateHud();
   }
 
@@ -1303,7 +1303,7 @@
     for (let index = state.pickups.length - 1; index >= 0; index -= 1) {
       const pickup = state.pickups[index];
       pickup.y += PICKUP_SPEEDS[pickup.type] * dt;
-      pickup.angle += dt * 2;
+      pickup.angle = 0;
       if (Math.hypot(pickup.x - state.playerX, pickup.y - state.playerY) < pickup.radius + 20) {
         collectPickup(pickup);
         state.pickups.splice(index, 1);
@@ -1712,7 +1712,6 @@
     const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
-    context.rotate(pickup.angle);
     if (skins.draw(context, `pickup-${pickup.type}`, 0, 0, 42, 42)) { context.restore(); return; }
     context.fillStyle = colors[pickup.type];
     context.shadowColor = colors[pickup.type];
@@ -1724,7 +1723,6 @@
     context.lineTo(-15, 0);
     context.closePath();
     context.fill();
-    context.rotate(-pickup.angle);
     context.fillStyle = '#071326';
     context.font = '900 12px Inter, sans-serif';
     context.textAlign = 'center';
