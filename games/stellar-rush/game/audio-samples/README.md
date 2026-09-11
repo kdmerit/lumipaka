@@ -1,5 +1,9 @@
 # Stellar Rush 오디오 샘플
 
+## 잡몹 격추음
+
+`enemy_destroy.wav`는 사용자가 제공한 `bomb_explosion.wav`의 첫 0.3초를 추출하고 DC 오프셋 제거, 짧은 어택·지수 감쇠·끝 페이드로 다듬은 소형 폭발음이다. 48kHz stereo 16-bit PCM, 피크 -3.1dBFS이며 잡몹 격추당 gain 0.10으로 기존 컴프레서를 통해 재생한다. 사운드 OFF 또는 샘플 로딩 실패 시 재생을 건너뛴다. 재생성: `python games/stellar-rush/tools/render-enemy-explosion.py`. 원본 폭탄음과 플레이어 피격음은 유지한다.
+
 ## 시작 화면 로딩
 
 아이템 PNG 6종은 긴 변 최대 256px의 투명 이미지로 배포합니다. 이미지 준비가 끝나면 시작 버튼을 활성화하며, WAV 로딩·디코딩은 백그라운드에서 계속합니다. 아직 준비되지 않은 효과음은 해당 재생을 건너뛰고 이후 정상 재생합니다.

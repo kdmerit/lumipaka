@@ -20,6 +20,7 @@
   const MODULES = ['split', 'missile', 'spread'];
   const MISSILE = { speed: 700, damage: 14, turnRate: 6, life: 2, intervals: [0, 2, 1, .5] };
   const AUDIO_SAMPLES = {
+    enemyDestroy: './audio-samples/enemy_destroy.wav',
     subBolt: './audio-samples/low-03-sub-bolt.wav',
     bassPlasma: './audio-samples/low-01-bass-plasma.wav',
     itemGet: './audio-samples/item_get2.wav', bombExplosion: './audio-samples/bomb_explosion.wav',
@@ -533,6 +534,7 @@
   }
 
   function endStage() {
+    if (state.screen !== 'playing') return;
     state.screen = 'stage-clear';
     state.stageScore = Math.max(0, state.score - state.stageScoreStart);
     updateProgressForStage();
@@ -540,6 +542,7 @@
     stageEyebrow.textContent = state.stageIndex === STAGE_COUNT - 1 ? 'MISSION COMPLETE' : 'STAGE CLEAR';
     stageTitle.textContent = currentStage().name;
     stageMedalElement.textContent = stageMedalValue();
+    state.lives = Math.min(3, state.lives + 1);
     stageCopy.textContent = state.stageIndex === STAGE_COUNT - 1 ? '모든 궤도를 돌파했습니다.' : '다음 궤도로 진입합니다.';
     stageScoreLine.textContent = `STAGE SCORE ${formatScore(state.stageScore)}`;
     stageTotalScoreLine.textContent = `SCORE ${formatScore(state.score)}`;
@@ -808,7 +811,7 @@
     spawnParticle(enemy.x, enemy.y, enemy.color, 12, 180);
     const pickupType = choosePickup(enemy);
     if (pickupType) spawnPickup(enemy.x, enemy.y, pickupType);
-    playTone('hit');
+    playGameSample('enemyDestroy', .10);
   }
 
   function firePlayer() {
@@ -925,7 +928,7 @@
   }
 
   function clearBombThreats() {
-    if (!state.bombEffect) return;
+    if (!state.bombEffect || state.stagePhase === 'boss-clear') return;
     state.enemyBullets.length = 0;
     state.hazards.length = 0;
   }
@@ -1148,7 +1151,6 @@
     state.score += 2500 + state.stageIndex * 450;
     state.stageScore += 2500 + state.stageIndex * 450;
     spawnParticle(boss.x, boss.y, currentStage().boss.color, 60, 300);
-    state.enemyBullets.length = 0;
     state.hazards.length = 0;
     state.boss = null; state.bombProjectile = null; state.bombEffect = { elapsed: 0, bursts: Array.from({ length: 9 }, (_, i) => ({ x: boss.x + ((i % 3) - 1) * 90, y: boss.y + (Math.floor(i / 3) - 1) * 85, start: i * .13, size: 260 })) };
     state.pendingStageClear = true; state.stagePhase = 'boss-clear'; playGameSample('bombExplosion', .24);
@@ -1435,7 +1437,7 @@
   }
 
   function takeHit() {
-    if (state.screen !== 'playing' || state.respawnTimer > 0 || state.invulnerable > 0) return;
+    if (state.screen !== 'playing' || state.pendingStageClear || state.respawnTimer > 0 || state.invulnerable > 0) return;
     if (state.shield) {
       state.shield = 0;
       state.invulnerable = .85;
@@ -1482,9 +1484,10 @@
     state.visualTime += dt;
     updateBomb(dt);
     if (state.screen !== 'playing') return;
-    if (state.pendingStageClear) { clearBombThreats(); updateHud(); return; }
+    if (state.pendingStageClear) { updateClearProjectiles(dt); return; }
     updatePlayer(dt);
     updateStage(dt);
+    if (state.pendingStageClear) { updateClearProjectiles(dt); return; }
     updateEnemies(dt);
     updatePlayerBullets(dt);
     updateEnemyBullets(dt);
@@ -1493,6 +1496,13 @@
     updateHazards(dt);
     updateParticles(dt);
     updateCollisions();
+    updateHud();
+  }
+
+  function updateClearProjectiles(dt) {
+    updatePlayerBullets(dt);
+    updateEnemyBullets(dt);
+    updateParticles(dt);
     updateHud();
   }
 
