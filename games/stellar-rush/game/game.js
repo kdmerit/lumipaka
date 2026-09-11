@@ -14,6 +14,7 @@
   const MOB_BULLET_SPEED_MULTIPLIER = 3;
   const PLAYER_REAR_Y = HEIGHT - 112;
   const PLAYER_FORWARD_Y = HEIGHT / 2;
+  const TOUCH_OFFSET_PX = 60;
   const PICKUP_SPEEDS = { shield: 440, bomb: 400, missile: 360, spread: 320, split: 280, score: 240 };
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
@@ -1824,11 +1825,13 @@
     drawToast();
   }
 
-  function pointerToCanvas(clientX, clientY) {
+  function pointerToCanvas(clientX, clientY, pointerType = 'mouse') {
     const bounds = canvas.getBoundingClientRect();
+    // Offset in displayed CSS pixels so fullscreen and smaller screens feel alike.
+    const offsetY = pointerType === 'touch' ? TOUCH_OFFSET_PX : 0;
     return {
       x: clamp(((clientX - bounds.left) / bounds.width) * WIDTH, 32, WIDTH - 32),
-      y: clamp(((clientY - bounds.top) / bounds.height) * HEIGHT, PLAYER_FORWARD_Y, PLAYER_REAR_Y)
+      y: clamp(((clientY - bounds.top - offsetY) / bounds.height) * HEIGHT, PLAYER_FORWARD_Y, PLAYER_REAR_Y)
     };
   }
 
@@ -1837,7 +1840,7 @@
     event.preventDefault();
     state.pointerActive = true;
     state.pointerId = event.pointerId;
-    const target = pointerToCanvas(event.clientX, event.clientY);
+    const target = pointerToCanvas(event.clientX, event.clientY, event.pointerType);
     state.pointerTargetX = target.x;
     state.pointerTargetY = target.y;
     canvas.setPointerCapture?.(event.pointerId);
@@ -1846,7 +1849,7 @@
   function movePointer(event) {
     if (!state.pointerActive || state.pointerId !== event.pointerId) return;
     event.preventDefault();
-    const target = pointerToCanvas(event.clientX, event.clientY);
+    const target = pointerToCanvas(event.clientX, event.clientY, event.pointerType);
     state.pointerTargetX = target.x;
     state.pointerTargetY = target.y;
   }
