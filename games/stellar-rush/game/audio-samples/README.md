@@ -15,8 +15,6 @@
 
 | 파일 | 분위기 |
 | --- | --- |
-| `victory-01-heroic-breakthrough.wav` | 금관과 현악이 전진하는 영웅적 돌파 팡파르 |
-| `victory-02-shadow-fortress-fall.wav` | 저현·팀파니로 시작하는 장중한 요새 함락 테마 |
-| `victory-03-celestial-coronation.wav` | 현악과 금관이 절정으로 향하는 광휘의 피날레 |
+| `victory-01-starlight-homecoming.wav` | 한 번 들으면 기억되는 상승·회귀 선율의 별빛 귀환 테마 |
 
 모든 파일은 약 5초 길이의 44.1kHz, stereo, 16-bit PCM WAV입니다. Virtual Playing Orchestra의 실제 현악·금관·팀파니 샘플을 새 멜로디로 편곡한 결과물이며, 원본 샘플 파일은 배포하지 않습니다. 재생성 스크립트는 `games/stellar-rush/tools/render-vpo-victories.py`에 있습니다.
