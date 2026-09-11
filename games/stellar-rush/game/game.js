@@ -1907,7 +1907,10 @@
   startRunButton.disabled = true;
   startRunButton.textContent = 'LOADING…';
   practiceButton.disabled = true;
-  Promise.all([skins.ready, preloadWeaponSamples()]).then(() => { assetsReady = true; startRunButton.disabled = false; startRunButton.textContent = 'PLAY ALL STAGES'; renderStageButtons(); updateHud(); });
+  // Image readiness gates the start button; audio continues preloading in the background.
+  // This keeps low-end mobile devices from waiting on multi-second WAV decoding.
+  preloadWeaponSamples();
+  skins.ready.then(() => { assetsReady = true; startRunButton.disabled = false; startRunButton.textContent = 'PLAY ALL STAGES'; renderStageButtons(); updateHud(); });
   document.addEventListener('visibilitychange', () => {
     state.lastTime = performance.now();
     state.keys.left = state.keys.right = state.keys.up = state.keys.down = false;
