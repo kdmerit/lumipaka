@@ -8,8 +8,8 @@
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 2;
-  const PICKUP_DROP_RATE = .075;
-  const TURRET_PICKUP_DROP_RATE = .0875;
+  const PICKUP_DROP_RATE = .1275;
+  const TURRET_PICKUP_DROP_RATE = .14875;
   const MOB_BULLET_COLOR = '#FF781F';
   const MOB_BULLET_SPEED_MULTIPLIER = 3;
   const PLAYER_REAR_Y = HEIGHT - 112;
@@ -1725,7 +1725,7 @@
     const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
-    context.scale(1.2, 1.2);
+    context.scale(1.8, 1.8);
     if (skins.draw(context, `pickup-${pickup.type}`, 0, 0, 42, 42)) { context.restore(); return; }
     context.fillStyle = colors[pickup.type];
     context.shadowColor = colors[pickup.type];
