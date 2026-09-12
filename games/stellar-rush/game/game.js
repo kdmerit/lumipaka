@@ -14,7 +14,7 @@
   const MOB_BULLET_SPEED_MULTIPLIER = 3;
   const PLAYER_REAR_Y = HEIGHT - 112;
   const PLAYER_FORWARD_Y = HEIGHT / 2;
-  const TOUCH_OFFSET_PX = 60;
+  const TOUCH_OFFSET_PX = 30;
   const PICKUP_SPEEDS = { shield: 440, bomb: 400, missile: 360, spread: 320, split: 280, score: 240 };
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';

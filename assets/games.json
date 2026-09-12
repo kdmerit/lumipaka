@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-12T12:11:32.759Z",
+  "generatedAt": "2026-09-12T12:17:16.993Z",
   "games": [
     {
       "slug": "brick-loop",
@@ -9,7 +9,7 @@
       "category": "ARCADE",
       "thumbnail": "../games/brick-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/brick-loop/game/?v=2026-09-12T12%3A11%3A32.759Z",
+      "gameUrl": "../games/brick-loop/game/?v=2026-09-12T12%3A17%3A16.993Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 좌우로 드래그해 패들 이동 · 떨어지는 아이템은 패들로 받기 · PAUSE 버튼 또는 P / ESC로 일시정지 · 목숨을 잃은 뒤 화면 터치 또는 Space / Enter로 공 발사",
       "howToPlay": "START 버튼을 눌러 시작하세요. 패들을 좌우로 움직여 공을 계속 튕겨내고, 화면 위의 모든 브릭을 부수세요. 레벨마다 30종 패턴이 순서대로 바뀌고, 11레벨부터는 파괴되지 않는 장애물 브릭이 2~5개 추가됩니다. 브릭에서 떨어지는 WIDE, MULTI, SHIELD, FIRE, DOUBLE, LIFE 아이템을 패들로 받으면 플레이에 도움이 되는 효과를 얻습니다.",
@@ -39,7 +39,7 @@
       "category": "SURVIVAL",
       "thumbnail": "../games/dodge-loop/game/thumbnail.svg",
       "thumbnailFile": "thumbnail.svg",
-      "gameUrl": "../games/dodge-loop/game/?v=2026-09-12T12%3A11%3A32.759Z",
+      "gameUrl": "../games/dodge-loop/game/?v=2026-09-12T12%3A17%3A16.993Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D · 모바일: 화면을 터치한 채 좌우로 이동 · PAUSE 버튼 또는 P / ESC로 일시정지",
       "howToPlay": "패들을 좌우로 움직여 위에서 떨어지는 블록을 피하세요. 시간이 지날수록 패턴이 빨라지므로 안전한 공간을 찾으며 오래 생존해 기록을 갱신하세요.",
@@ -63,7 +63,7 @@
       "category": "ARCADE",
       "thumbnail": "../games/smash-rally/game/thumbnail.png",
       "thumbnailFile": "thumbnail.png",
-      "gameUrl": "../games/smash-rally/game/?v=2026-09-12T12%3A11%3A32.759Z",
+      "gameUrl": "../games/smash-rally/game/?v=2026-09-12T12%3A17%3A16.993Z",
       "orientation": "portrait",
       "controls": "PC: ← → 또는 A D로 패들 이동 · Space 또는 SERVE 버튼으로 서브 · P / ESC 또는 PAUSE 버튼으로 일시정지 · 모바일: 화면을 좌우로 드래그하고 탭 또는 SERVE 버튼으로 서브",
       "howToPlay": "시작 전에 승리 점수, 세트 수, 듀스, 난이도를 고르세요. 하단 패들을 움직여 공을 위로 보내고 CPU 패들을 지나 상단 벽으로 넘기면 득점합니다. 선택한 세트 수의 과반을 먼저 이기면 승리하며, 각 랠리에서 공을 놓친 쪽이 다음 서브를 맡습니다.",
@@ -88,7 +88,7 @@
       "category": "SHOOTER",
       "thumbnail": "../games/stellar-rush/game/thumbnail.webp",
       "thumbnailFile": "thumbnail.webp",
-      "gameUrl": "../games/stellar-rush/game/?v=2026-09-12T12%3A11%3A32.759Z",
+      "gameUrl": "../games/stellar-rush/game/?v=2026-09-12T12%3A17%3A16.993Z",
       "orientation": "portrait",
       "controls": "PC: 마우스 드래그 또는 ↑ ↓ ← → / W A S D로 상하좌우·대각선 이동 · 모바일: 화면을 드래그해 이동(화면 중앙선까지 전진 가능) · 자동 연사 · Space / X / 폭탄 아이콘 버튼으로 폭탄 · P / ESC 또는 PAUSE로 일시정지",
       "howToPlay": "기체는 자동으로 공격합니다. 화면을 좌우로 움직이며 적의 탄막을 피하고, 무기 모듈 아이템을 모아 화력을 강화하세요. 10개 스테이지의 보스를 격파하고 최고 점수와 메달을 갱신하는 것이 목표입니다.",
