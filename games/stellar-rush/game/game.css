@@ -97,6 +97,11 @@ h1 em { color: var(--cyan); font-style: normal; }
 .heart.empty svg { fill: none; }
 .bomb-display img { width: 18px; height: 26px; object-fit: contain; }
 .bomb-status { justify-content: center; }
+.bomb-status { cursor: pointer; }
+.bomb-status:disabled { cursor: default; }
+.bomb-status:not(:disabled):hover { border-color: var(--cyan); }
+.bomb-status:focus-visible, .bomb-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.bomb-button { min-width: 116px; flex-shrink: 0; }
 .bomb-status .bomb-display { font-size: 16px; }
 .bomb-cooldown { margin-left: 5px; font-variant-numeric: tabular-nums; }
 .setup-actions > button { flex: 1 1 160px; max-width: 220px; }
@@ -126,6 +131,7 @@ html[data-lumipaka-fullscreen="true"] .hint { display: none; }
   .primary-button, .secondary-button { min-width: 135px; padding: 10px 12px; font-size: 9px; }
   .game-tools { margin-top: 7px; }
   .bomb-button, .pause-button, .sound-button { padding: 6px 7px; font-size: 8px; }
+  .bomb-button { min-width: 102px; }
   .hint { font-size: 8px; }
 }
 

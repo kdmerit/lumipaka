@@ -164,6 +164,7 @@
   const restartButton = $('#restart-button');
   const setupButton = $('#setup-button');
   const bombButton = $('#bomb-button');
+  const hudBombButton = $('#hud-bomb-button');
   const pauseButton = $('#pause-button');
   const soundButton = $('#sound-button');
   const resumeButton = $('#resume-button');
@@ -647,6 +648,8 @@
       element.classList.toggle('active', level > 0);
     }
     bombButton.disabled = state.screen !== 'playing' || state.bombs <= 0 || state.bombCooldown > 0 || state.pendingStageClear;
+    hudBombButton.disabled = bombButton.disabled;
+    hudBombButton.setAttribute('aria-label', bombButton.getAttribute('aria-label'));
     pauseButton.disabled = !['playing', 'paused'].includes(state.screen);
     if (state.screen !== 'paused') pauseButton.setAttribute('aria-pressed', 'false');
     soundButton.textContent = state.soundEnabled ? 'SOUND ON' : 'SOUND OFF';
@@ -1902,6 +1905,7 @@
   resumeButton.addEventListener('click', togglePause);
   pauseButton.addEventListener('click', togglePause);
   bombButton.addEventListener('click', useBomb);
+  hudBombButton.addEventListener('click', useBomb);
   soundButton.addEventListener('click', () => {
     state.soundEnabled = !state.soundEnabled;
     saveSettings();
