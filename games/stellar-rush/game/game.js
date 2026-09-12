@@ -825,9 +825,9 @@
 
     const splitLevel = state.modules.split;
     for (let index = 1; index <= splitLevel; index += 1) {
-      const angle = .2 + index * .08;
+      const offset = 8 + index * 16;
       for (const direction of [-1, 1]) {
-        spawnPlayerBullet(x, y, Math.sin(angle) * 900 * direction, -Math.cos(angle) * 900, { damage: 1.25 + index * .25, color: '#c5a7ff' });
+        spawnPlayerBullet(x + offset * direction, y, 0, -900, { damage: 1.25 + index * .25, color: '#c5a7ff' });
       }
     }
     if (splitLevel > 0) playWeaponSample('subBolt', splitLevel);
