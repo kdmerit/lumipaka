@@ -958,6 +958,8 @@
 
   function collectPickup(pickup) {
     if (MODULES.includes(pickup.type)) {
+      if (pickup.type === 'split') state.modules.spread = 0;
+      if (pickup.type === 'spread') state.modules.split = 0;
       state.modules[pickup.type] = Math.min(MAX_MODULE_LEVEL, state.modules[pickup.type] + 1);
       if (pickup.type === 'missile') state.missileTimer = 0;
       showToast(`${pickup.type.toUpperCase()} +${state.modules[pickup.type]}`, 1.1);
@@ -1723,6 +1725,7 @@
     const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
+    context.scale(1.2, 1.2);
     if (skins.draw(context, `pickup-${pickup.type}`, 0, 0, 42, 42)) { context.restore(); return; }
     context.fillStyle = colors[pickup.type];
     context.shadowColor = colors[pickup.type];
