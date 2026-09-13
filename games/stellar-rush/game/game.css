@@ -84,6 +84,12 @@ h1 em { color: var(--cyan); font-style: normal; }
 .pause-title { color: var(--cyan); font-size: clamp(34px, 10vw, 58px); font-weight: 950; letter-spacing: -.06em; }
 .pause-copy { margin: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
 .game-tools { display: flex; justify-content: center; gap: 6px; margin-top: 9px; }
+.cheat-menu { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.cheat-menu[hidden] { display: none; }
+.cheat-menu button { padding: 8px 10px; border: 1px solid var(--cyan); border-radius: 8px; color: var(--cyan); background: transparent; font-size: 10px; cursor: pointer; }
+.cheat-menu button[aria-pressed="true"] { color: var(--ink); background: var(--cyan); }
+#lives[data-cheat="invincible"] { font-size: 10px; letter-spacing: 0; }
+#lives[data-cheat="infinite"] { font-size: 24px; line-height: 1; }
 .bomb-button, .pause-button, .sound-button { padding: 7px 10px; border-color: rgba(114,231,255,.28); color: var(--cyan); background: rgba(114,231,255,.08); }
 .bomb-button:not(:disabled):hover, .pause-button:not(:disabled):hover, .sound-button:hover { color: var(--ink); background: var(--cyan); }
 .bomb-button:disabled, .pause-button:disabled { cursor: default; opacity: .35; }

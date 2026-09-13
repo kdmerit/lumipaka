@@ -226,6 +226,8 @@
   const settings = readSettings();
   const state = {
     screen: 'setup',
+    cheatMode: 'none',
+    cheatTaps: 0,
     runMode: 'run',
     selectedStage: Math.max(0, Math.min(STAGE_COUNT - 1, settings.selectedStage)),
     stageIndex: 0,
@@ -435,6 +437,7 @@
     const index = state.stageIndex;
     const medal = stageMedal();
     state.progress.unlockedStage = Math.max(state.progress.unlockedStage, Math.min(STAGE_COUNT - 1, index + 1));
+    if (state.cheatMode !== 'none') { saveProgress(); return; }
     if (medalRank(medal) > medalRank(state.progress.medals[index])) state.progress.medals[index] = medal;
     state.progress.stageScores[index] = Math.max(state.progress.stageScores[index] || 0, state.stageScore);
     saveProgress();
@@ -496,6 +499,7 @@
 
   function startRun(stageIndex, mode) {
     if (!assetsReady) return;
+    state.cheatTaps = 0;
     state.bombCooldown = 0;
     for (const key of Object.keys(skinCounts)) delete skinCounts[key];
     ensureAudio();
@@ -564,9 +568,9 @@
     state.bombEffect = null;
     state.pendingStageClear = false;
     state.screen = 'result';
-    if (state.runMode === 'run' && result === 'clear') state.progress.bestRunScore = Math.max(state.progress.bestRunScore, state.score);
+    if (state.cheatMode === 'none' && state.runMode === 'run' && result === 'clear') state.progress.bestRunScore = Math.max(state.progress.bestRunScore, state.score);
     saveProgress();
-    emitAnalytics('post_score', { score: state.score });
+    if (state.cheatMode === 'none') emitAnalytics('post_score', { score: state.score });
     emitAnalytics('lumipaka_game_end', { result, score: state.score, character: CHARACTER });
     resultEyebrow.textContent = result === 'clear' ? 'MISSION COMPLETE' : result === 'practice_clear' ? 'PRACTICE CLEAR' : 'RUN OVER';
     resultTitle.textContent = result === 'clear' ? 'RUN COMPLETE' : result === 'practice_clear' ? 'STAGE CLEAR' : 'GAME OVER';
@@ -577,6 +581,7 @@
         ? `${currentStage().name} 기록을 저장했습니다.`
         : '다시 출격해 패턴을 익혀보세요.';
     restartButton.textContent = result === 'practice_clear' ? 'PRACTICE AGAIN' : 'RESTART RUN';
+    if (state.cheatMode !== 'none') resultCopy.textContent = '테스트 모드 · 최고 점수와 메달은 기록되지 않습니다.';
     resultOverlay.hidden = false;
     updateHud();
   }
@@ -596,6 +601,7 @@
   }
 
   function showSetup() {
+    state.cheatTaps = 0;
     state.screen = 'setup';
     hideAllOverlays();
     setupOverlay.hidden = false;
@@ -621,10 +627,15 @@
     scoreElement.textContent = formatScore(state.score);
     stageElement.textContent = String(state.stageIndex + 1).padStart(2, '0');
     stageNameElement.textContent = stage.name;
-    if (livesElement.dataset.count !== String(state.lives)) {
+    if (livesElement.dataset.count !== `${state.cheatMode}-${state.lives}`) {
       livesElement.innerHTML = Array.from({ length: 3 }, (_, i) => `<span class="heart${i < state.lives ? '' : ' empty'}">${HEART_ICON}</span>`).join('');
-      livesElement.dataset.count = String(state.lives);
+      livesElement.dataset.count = `${state.cheatMode}-${state.lives}`;
+      livesElement.dataset.cheat = state.cheatMode;
       livesElement.setAttribute('aria-label', `남은 목숨 ${state.lives}개`);
+      if (state.cheatMode !== 'none') {
+        livesElement.textContent = state.cheatMode === 'infinite' ? '∞' : 'INVINCIBLE';
+        livesElement.setAttribute('aria-label', state.cheatMode === 'infinite' ? '목숨 무한' : '무적');
+      }
     }
     for (const element of [bombCountElement, toolBombCountElement]) {
       const icon = skins.images.has('bomb') ? `<img src="${skins.urls.get('bomb')}" alt="" />` : BOMB_ICON;
@@ -1443,6 +1454,7 @@
   }
 
   function takeHit() {
+    if (state.cheatMode === 'invincible') return;
     if (state.screen !== 'playing' || state.pendingStageClear || state.respawnTimer > 0 || state.invulnerable > 0) return;
     if (state.shield) {
       state.shield = 0;
@@ -1453,7 +1465,7 @@
       updateHud();
       return;
     }
-    state.lives -= 1;
+    if (state.cheatMode !== 'infinite') state.lives -= 1;
     resetModules();
     state.invulnerable = 1.5;
     state.respawnTimer = .7;
@@ -1913,6 +1925,24 @@
     updateHud();
   });
   canvas.addEventListener('pointerdown', startPointer, { passive: false });
+  document.addEventListener('pointerdown', (event) => {
+    if (state.screen !== 'setup') { state.cheatTaps = 0; return; }
+    const expected = state.cheatTaps < 5 ? '#lives-area' : '.shield-status';
+    if (!event.target.closest(expected)) { state.cheatTaps = 0; return; }
+    state.cheatTaps += 1;
+    if (state.cheatTaps === 10) {
+      $('#cheat-menu').hidden = false;
+      state.cheatTaps = 0;
+    }
+  }, true);
+  for (const button of document.querySelectorAll('#cheat-menu [data-cheat]')) {
+    button.addEventListener('click', () => {
+      if (state.screen !== 'setup') return;
+      state.cheatMode = button.dataset.cheat;
+      for (const option of document.querySelectorAll('#cheat-menu [data-cheat]')) option.setAttribute('aria-pressed', String(option === button));
+      updateHud();
+    });
+  }
   canvas.addEventListener('pointermove', movePointer, { passive: false });
   canvas.addEventListener('pointerup', endPointer, { passive: false });
   canvas.addEventListener('pointercancel', endPointer, { passive: false });

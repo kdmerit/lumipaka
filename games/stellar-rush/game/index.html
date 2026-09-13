@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Stellar Rush</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-12T12%3A39%3A37.194Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-13T09%3A54%3A48.362Z" />
   </head>
   <body>
     <main class="game-shell">
@@ -15,7 +15,7 @@
       </header>
 
       <div class="status-row" aria-label="목숨과 자원">
-        <div class="status-group"><span class="hud-label">LIVES</span><strong id="lives" role="img" aria-label="남은 목숨 3개"></strong></div>
+        <div class="status-group" id="lives-area"><span class="hud-label">LIVES</span><strong id="lives" role="img" aria-label="남은 목숨 3개"></strong></div>
         <button id="hud-bomb-button" class="status-group bomb-status" type="button" aria-label="폭탄 사용, 남은 폭탄 2개" disabled><strong id="bomb-count" class="bomb-display" role="img" aria-label="폭탄 2개"></strong></button>
         <div class="status-group shield-status"><span class="hud-label">SHIELD</span><strong id="shield-status">READY</strong></div>
       </div>
@@ -42,6 +42,11 @@
           <div class="setup-actions">
             <button id="start-run-button" class="primary-button" type="button">PLAY ALL STAGES</button>
             <button id="practice-button" class="secondary-button" type="button" disabled>PLAY SELECTED STAGE</button>
+          </div>
+          <div id="cheat-menu" class="cheat-menu" role="group" aria-label="관리자 테스트 모드" hidden>
+            <button type="button" data-cheat="none" aria-pressed="true">NONE</button>
+            <button type="button" data-cheat="infinite" aria-pressed="false">목숨무한</button>
+            <button type="button" data-cheat="invincible" aria-pressed="false">무적</button>
           </div>
         </section>
 
@@ -80,8 +85,8 @@
       </div>
       <p class="hint">드래그 또는 ↑ ↓ ← → / W A S D로 이동 · 자동 연사 · Space / X / 폭탄 아이콘으로 폭탄 · P / ESC 일시정지</p>
     </main>
-    <script src="./skins.js?v=2026-09-12T12%3A39%3A37.194Z"></script>
-    <script src="./game.js?v=2026-09-12T12%3A39%3A37.194Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-12T12%3A39%3A37.194Z"></script>
+    <script src="./skins.js?v=2026-09-13T09%3A54%3A48.362Z"></script>
+    <script src="./game.js?v=2026-09-13T09%3A54%3A48.362Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-13T09%3A54%3A48.362Z"></script>
 </body>
 </html>
