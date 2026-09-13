@@ -625,6 +625,40 @@
     pauseButton.setAttribute('aria-pressed', 'true');
   }
 
+  function resetControlInput() {
+    state.pointerActive = false;
+    state.pointerId = null;
+    for (const key of Object.keys(state.keys)) state.keys[key] = false;
+  }
+
+  function restartPausedStage() {
+    if (state.screen !== 'paused') return;
+    emitAnalytics('level_end', { level_name: `stage-${String(state.stageIndex + 1).padStart(2, '0')}`, success: false });
+    state.score = state.stageScoreStart;
+    state.lives = 3;
+    state.bombs = 2;
+    state.bombCooldown = 0;
+    state.shield = 0;
+    resetModules();
+    resetControlInput();
+    state.fireTimer = .1;
+    state.toastTimer = 0;
+    state.randomSeed = 1000 + state.stageIndex * 7919 + (state.runMode === 'practice' ? 333 : 0);
+    state.screen = 'playing';
+    hideAllOverlays();
+    beginStage(state.stageIndex);
+  }
+
+  function exitPausedGame() {
+    if (state.screen !== 'paused') return;
+    emitAnalytics('level_end', { level_name: `stage-${String(state.stageIndex + 1).padStart(2, '0')}`, success: false });
+    emitAnalytics('lumipaka_game_end', { result: 'exit', score: state.score, character: CHARACTER });
+    resetControlInput();
+    resetEntities();
+    state.toastTimer = 0;
+    showSetup();
+  }
+
   function updateHud() {
     const stage = currentStage();
     scoreElement.textContent = formatScore(state.score);
@@ -1919,6 +1953,8 @@
   });
   setupButton.addEventListener('click', showSetup);
   resumeButton.addEventListener('click', togglePause);
+  $('#pause-restart-button').addEventListener('click', restartPausedStage);
+  $('#pause-exit-button').addEventListener('click', exitPausedGame);
   pauseButton.addEventListener('click', togglePause);
   bombButton.addEventListener('click', useBomb);
   hudBombButton.addEventListener('click', useBomb);
