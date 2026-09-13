@@ -636,7 +636,7 @@
       livesElement.dataset.cheat = state.cheatMode;
       livesElement.setAttribute('aria-label', `남은 목숨 ${state.lives}개`);
       if (state.cheatMode !== 'none') {
-        livesElement.textContent = state.cheatMode === 'infinite' ? '∞' : 'INVINCIBLE';
+        livesElement.textContent = state.cheatMode === 'infinite' ? '∞' : 'IMMORTAL';
         livesElement.setAttribute('aria-label', state.cheatMode === 'infinite' ? '목숨 무한' : '무적');
       }
     }
