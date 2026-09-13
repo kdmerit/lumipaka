@@ -743,6 +743,7 @@
     skinCounts[type] = (skinCounts[type] || 0) + 1;
     const stats = ENEMY_STATS[type] || ENEMY_STATS.scout;
     const stageScale = 1 + state.stageIndex * .08;
+    const hp = Math.ceil((options.hp || stats.hp) * stageScale) * (type === 'turret' ? .5 : 1);
     state.enemies.push({
       skinId,
       type,
@@ -752,8 +753,8 @@
       originY: y,
       vx: options.vx || 0,
       vy: options.vy || stats.speed * currentProfile().enemySpeed,
-      hp: Math.ceil((options.hp || stats.hp) * stageScale),
-      maxHp: Math.ceil((options.hp || stats.hp) * stageScale),
+      hp,
+      maxHp: hp,
       radius: stats.radius,
       score: stats.score,
       color: stats.color,
@@ -1241,7 +1242,7 @@
       }
       enemy.shootTimer -= dt;
       if (enemy.shootTimer <= 0 && ['shooter', 'turret', 'orbiter'].includes(enemy.type)) {
-        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, (170 + state.stageIndex * 12) * MOB_BULLET_SPEED_MULTIPLIER, { color: MOB_BULLET_COLOR, swept: true });
+        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, (170 + state.stageIndex * 12) * MOB_BULLET_SPEED_MULTIPLIER * (enemy.type === 'turret' ? .5 : 1), { color: MOB_BULLET_COLOR, swept: true });
         enemy.shootTimer = (enemy.type === 'turret' ? 1.9 : 2.4) / profile.bulletDensity;
       }
       if (enemy.y > HEIGHT + 120 || enemy.x < -150 || enemy.x > WIDTH + 150) state.enemies.splice(index, 1);
