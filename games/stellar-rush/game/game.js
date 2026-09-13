@@ -451,10 +451,12 @@
   }
 
   function renderStageButtons() {
+    const selectableStage = state.cheatMode === 'none' ? state.progress.unlockedStage : STAGE_COUNT - 1;
+    state.selectedStage = Math.min(state.selectedStage, selectableStage);
     stageGrid.innerHTML = '';
     for (let index = 0; index < STAGE_COUNT; index += 1) {
       const button = document.createElement('button');
-      const unlocked = index <= state.progress.unlockedStage;
+      const unlocked = index <= selectableStage;
       button.type = 'button';
       button.className = `stage-button${index === state.selectedStage ? ' selected' : ''}`;
       button.dataset.stage = String(index);
@@ -466,14 +468,15 @@
       stageGrid.appendChild(button);
     }
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${STAGES[state.selectedStage].name}`;
-    practiceButton.disabled = !assetsReady || state.selectedStage > state.progress.unlockedStage;
+    practiceButton.disabled = !assetsReady || state.selectedStage > selectableStage;
     setupProgress.textContent = `CLEARED ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · cleared stages unlock practice`;
   }
 
   function selectStage(index) {
-    if (index < 0 || index > state.progress.unlockedStage) return;
+    const selectableStage = state.cheatMode === 'none' ? state.progress.unlockedStage : STAGE_COUNT - 1;
+    if (!Number.isInteger(index) || index < 0 || index > selectableStage) return;
     state.selectedStage = index;
-    saveSettings();
+    if (state.cheatMode === 'none') saveSettings();
     renderStageButtons();
   }
 
@@ -1940,6 +1943,7 @@
     button.addEventListener('click', () => {
       if (state.screen !== 'setup') return;
       state.cheatMode = button.dataset.cheat;
+      renderStageButtons();
       for (const option of document.querySelectorAll('#cheat-menu [data-cheat]')) option.setAttribute('aria-pressed', String(option === button));
       updateHud();
     });
