@@ -1618,6 +1618,7 @@
     const palette = currentStage().palette;
     context.save();
     context.translate(x, y);
+    context.scale(1.2, 1.2); // Visual only: keep movement and collision bounds unchanged.
     if (skins.images.has('fighter')) {
       for (let i = 0; i < 2; i++) {
         const wave = Math.sin(state.visualTime * 23 + i * 2.3);
