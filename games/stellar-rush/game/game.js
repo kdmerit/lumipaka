@@ -84,14 +84,14 @@
   const BOSS_PROFILES = [
     { name: 'ORBIT WARDEN', color: '#72e7ff', phases: [['radial', 'aimed'], ['sweep', 'radial']] },
     { name: 'COMET MANTIS', color: '#ff7bc7', phases: [['dash', 'aimed'], ['cross', 'sweep']] },
-    { name: 'NEBULA HYDRA', color: '#77f0d0', phases: [['spiral', 'minions'], ['radial', 'aimed'], ['spiral', 'grid']] },
-    { name: 'SOLAR FORGE', color: '#ffd86e', phases: [['lane', 'sweep'], ['grid', 'radial'], ['lane', 'cross']] },
-    { name: 'MOON BASTION', color: '#c5a7ff', phases: [['orbit', 'mines'], ['cross', 'orbit'], ['grid', 'mines']] },
-    { name: 'VOID CARRIER', color: '#72e7ff', phases: [['minions', 'aimed'], ['radial', 'dash'], ['grid', 'minions']] },
-    { name: 'PRISM LEVIATHAN', color: '#ff7bc7', phases: [['sweep', 'lane'], ['cross', 'spiral'], ['lane', 'sweep']] },
-    { name: 'GRAVITY MAW', color: '#ffd86e', phases: [['orbit', 'mine'], ['spiral', 'grid'], ['orbit', 'lane']] },
-    { name: 'ECLIPSE SERAPH', color: '#ff789d', phases: [['mine', 'grid'], ['sweep', 'spiral'], ['lane', 'cross']] },
-    { name: 'SINGULARITY CORE', color: '#f4f8ff', phases: [['radial', 'aimed'], ['lane', 'sweep'], ['spiral', 'grid'], ['orbit', 'cross', 'mine']] }
+    { name: 'NEBULA HYDRA', color: '#77f0d0', phases: [['spiral', 'dual-aimed', 'minions'], ['radial-aimed', 'fast-fan'], ['spiral', 'grid', 'dual-aimed']] },
+    { name: 'SOLAR FORGE', color: '#ffd86e', phases: [['lane', 'sweep', 'fast-fan'], ['grid', 'radial-aimed'], ['lane', 'cross', 'dual-aimed']] },
+    { name: 'MOON BASTION', color: '#c5a7ff', phases: [['orbit', 'mines', 'dual-aimed'], ['cross', 'orbit', 'fast-fan'], ['grid', 'mines', 'radial-aimed']] },
+    { name: 'VOID CARRIER', color: '#72e7ff', phases: [['minions', 'dual-aimed'], ['radial-aimed', 'dash', 'fast-fan'], ['grid', 'minions', 'dual-aimed']] },
+    { name: 'PRISM LEVIATHAN', color: '#ff7bc7', phases: [['sweep', 'lane', 'fast-fan'], ['cross', 'spiral', 'dual-aimed'], ['lane', 'sweep', 'radial-aimed']] },
+    { name: 'GRAVITY MAW', color: '#ffd86e', phases: [['orbit', 'mine', 'dual-aimed'], ['spiral', 'grid', 'fast-fan'], ['orbit', 'lane', 'radial-aimed']] },
+    { name: 'ECLIPSE SERAPH', color: '#ff789d', phases: [['mine', 'grid', 'fast-fan'], ['sweep', 'spiral', 'dual-aimed'], ['lane', 'cross', 'radial-aimed']] },
+    { name: 'SINGULARITY CORE', color: '#f4f8ff', phases: [['radial-aimed', 'dual-aimed'], ['lane', 'sweep', 'fast-fan'], ['spiral', 'grid', 'dual-aimed'], ['orbit', 'radial-aimed', 'mine', 'fast-fan']] }
   ];
 
   const WAVE_PATTERNS = [
@@ -109,7 +109,8 @@
 
   const STAGES = STAGE_NAMES.map((name, index) => {
     const profile = STAGE_PROFILES[index];
-    const baseDuration = 21 + index * 1.5;
+    const waveIndex = index <= 3 ? index : 3 + (index - 3) * .25;
+    const baseDuration = 21 + waveIndex * 1.5;
     const patterns = WAVE_PATTERNS[index];
     return {
       id: index + 1,
@@ -117,9 +118,9 @@
       palette: STAGE_PALETTES[index],
       profile,
       waves: [
-        { duration: baseDuration, spawnEvery: Math.max(.78, 1.55 - index * .055), pattern: patterns[0] },
-        { duration: baseDuration + 3, spawnEvery: Math.max(.72, 1.38 - index * .05), pattern: patterns[1] },
-        { duration: baseDuration + 6, spawnEvery: Math.max(.66, 1.24 - index * .045), pattern: patterns[2] }
+        { duration: baseDuration, spawnEvery: Math.max(.78, 1.55 - waveIndex * .055), pattern: patterns[0] },
+        { duration: baseDuration + 3, spawnEvery: Math.max(.72, 1.38 - waveIndex * .05), pattern: patterns[1] },
+        { duration: baseDuration + 6, spawnEvery: Math.max(.66, 1.24 - waveIndex * .045), pattern: patterns[2] }
       ],
       boss: BOSS_PROFILES[index]
     };
@@ -302,6 +303,16 @@
 
   function currentProfile() {
     return currentStage().profile;
+  }
+
+  function mobStageIndex() {
+    return state.stageIndex <= 3 ? state.stageIndex : 3 + (state.stageIndex - 3) * .25;
+  }
+
+  function mobProfile() {
+    if (state.stageIndex <= 3) return currentProfile();
+    const step = state.stageIndex - 3;
+    return { enemySpeed: .98 + step * .015, bulletSpeed: 1 + step * .012, bulletDensity: .90 + step * .025 };
   }
 
   function formatScore(value) {
@@ -742,7 +753,7 @@
 
   function spawnAimedBurst(x, y, count, spread, speed, options = {}) {
     const baseAngle = Math.atan2(state.playerY - y, state.playerX - x);
-    const profile = currentProfile();
+    const profile = options.swept ? mobProfile() : currentProfile();
     for (let index = 0; index < count; index += 1) {
       const ratio = count === 1 ? 0 : index / (count - 1) - .5;
       const angle = baseAngle + ratio * spread;
@@ -775,11 +786,12 @@
   }
 
   function spawnEnemy(type, x, y, options = {}) {
+    if (state.stageIndex >= 4 && (state.enemies.filter(e => !e.dead).length >= 18 + state.stageIndex - 4 || (type === 'turret' && state.enemies.filter(e => !e.dead && e.type === 'turret').length >= 2))) return;
     const variants = SKIN_VARIANTS[type] || [1];
     const skinId = variants[(skinCounts[type] || 0) % variants.length];
     skinCounts[type] = (skinCounts[type] || 0) + 1;
     const stats = ENEMY_STATS[type] || ENEMY_STATS.scout;
-    const stageScale = 1 + state.stageIndex * .08;
+    const stageScale = 1 + mobStageIndex() * .08;
     const hp = Math.ceil((options.hp || stats.hp) * stageScale) * (type === 'turret' ? .5 : 1);
     state.enemies.push({
       skinId,
@@ -789,7 +801,7 @@
       originX: x,
       originY: y,
       vx: options.vx || 0,
-      vy: options.vy || stats.speed * currentProfile().enemySpeed,
+      vy: options.vy || stats.speed * mobProfile().enemySpeed,
       hp,
       maxHp: hp,
       radius: stats.radius,
@@ -804,7 +816,7 @@
 
   function spawnWaveFormation(wave) {
     const center = WIDTH / 2;
-    const gap = 94 + state.stageIndex * 3;
+    const gap = 94 + mobStageIndex() * 3;
     switch (wave.pattern) {
       case 'line':
         for (let index = -2; index <= 2; index += 1) spawnEnemy('scout', center + index * gap, -48 - Math.abs(index) * 30);
@@ -846,7 +858,6 @@
         spawnEnemy('shooter', 130, -75);
         spawnEnemy('zigzag', center, -125);
         spawnEnemy('charger', WIDTH - 130, -175);
-        if (state.stageIndex >= 4) spawnEnemy('turret', center + 180, 80);
         break;
     }
   }
@@ -1055,7 +1066,8 @@
 
   function patternCooldown(pattern) {
     const cooldowns = { radial: 1.15, aimed: 1.35, sweep: 1.85, cross: 1.3, lane: 1.9, spiral: 1.6, grid: 1.75, minions: 2.1, orbit: 1.65, mine: 1.8, mines: 1.9, dash: 1.55 };
-    return cooldowns[pattern] || 1.45;
+    const base = ({ 'dual-aimed': 1.35, 'radial-aimed': 1.7, 'fast-fan': 1.2 })[pattern] || cooldowns[pattern] || 1.45;
+    return base * (state.stageIndex < 2 ? 1 : .94 - (state.stageIndex - 2) * .02);
   }
 
   function executeBossPattern(pattern) {
@@ -1064,6 +1076,17 @@
     const palette = currentStage().palette;
     if (!boss) return;
     switch (pattern) {
+      case 'dual-aimed':
+        spawnAimedBurst(boss.x - 60, boss.y + 35, 3, .34, 230 + state.stageIndex * 10);
+        spawnAimedBurst(boss.x + 60, boss.y + 35, 3, .34, 230 + state.stageIndex * 10);
+        break;
+      case 'radial-aimed':
+        executeBossPattern('radial');
+        spawnAimedBurst(boss.x, boss.y + 35, 3, .32, 230 + state.stageIndex * 10);
+        break;
+      case 'fast-fan':
+        spawnAimedBurst(boss.x, boss.y + 35, 3, .34, 300 + state.stageIndex * 10);
+        break;
       case 'radial': {
         const count = 14 + state.stageIndex * 2;
         const speed = 155 + state.stageIndex * 10;
@@ -1222,7 +1245,7 @@
     state.waveSpawnTimer -= dt;
     if (state.waveElapsed < wave.duration && state.waveSpawnTimer <= 0) {
       spawnWaveFormation(wave);
-      state.waveSpawnTimer = wave.spawnEvery / currentProfile().bulletDensity;
+      state.waveSpawnTimer = wave.spawnEvery / mobProfile().bulletDensity;
     }
     if (state.waveElapsed >= wave.duration && (state.enemies.length === 0 || state.waveElapsed >= wave.duration + 4)) {
       for (const enemy of state.enemies) {
@@ -1253,7 +1276,7 @@
   }
 
   function updateEnemies(dt) {
-    const profile = currentProfile();
+    const profile = mobProfile();
     for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = state.enemies[index];
       if (enemy.dead) {
@@ -1262,11 +1285,11 @@
       }
       enemy.age += dt;
       if (enemy.type === 'zigzag') {
-        enemy.x = enemy.originX + Math.sin(enemy.age * (2.1 + state.stageIndex * .08) + enemy.phase) * (75 + state.stageIndex * 4);
+        enemy.x = enemy.originX + Math.sin(enemy.age * (2.1 + mobStageIndex() * .08) + enemy.phase) * (75 + mobStageIndex() * 4);
         enemy.y += enemy.vy * dt;
       } else if (enemy.type === 'charger') {
         enemy.y += enemy.vy * dt;
-        if (enemy.y > 160) enemy.x += Math.sign(state.playerX - enemy.x) * (170 + state.stageIndex * 8) * dt;
+        if (enemy.y > 160) enemy.x += Math.sign(state.playerX - enemy.x) * (170 + mobStageIndex() * 8) * dt;
       } else if (enemy.type === 'turret' && enemy.retreating) {
         enemy.y += enemy.vy * dt;
       } else if (enemy.type === 'turret') {
@@ -1279,7 +1302,7 @@
       }
       enemy.shootTimer -= dt;
       if (enemy.shootTimer <= 0 && ['shooter', 'turret', 'orbiter'].includes(enemy.type)) {
-        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, (170 + state.stageIndex * 12) * MOB_BULLET_SPEED_MULTIPLIER * (enemy.type === 'turret' ? .5 : 1), { color: MOB_BULLET_COLOR, swept: true });
+        spawnAimedBurst(enemy.x, enemy.y + enemy.radius, enemy.type === 'turret' ? 3 : 1, enemy.type === 'turret' ? .38 : .12, (170 + mobStageIndex() * 12) * MOB_BULLET_SPEED_MULTIPLIER * (enemy.type === 'turret' ? .5 : 1), { color: MOB_BULLET_COLOR, swept: true });
         enemy.shootTimer = (enemy.type === 'turret' ? 1.9 : 2.4) / profile.bulletDensity;
       }
       if (enemy.y > HEIGHT + 120 || enemy.x < -150 || enemy.x > WIDTH + 150) state.enemies.splice(index, 1);
