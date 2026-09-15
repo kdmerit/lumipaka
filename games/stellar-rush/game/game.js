@@ -456,7 +456,8 @@
   function updateProgressForStage() {
     const index = state.stageIndex;
     const medal = stageMedal();
-    state.progress.unlockedStage = Math.max(state.progress.unlockedStage, Math.min(STAGE_COUNT - 1, index + 1));
+    // Only the continuous run starting at stage one can unlock the next stage.
+    if (state.runMode === 'run') state.progress.unlockedStage = Math.max(state.progress.unlockedStage, Math.min(STAGE_COUNT - 1, index + 1));
     if (state.cheatMode !== 'none') { saveProgress(); return; }
     if (medalRank(medal) > medalRank(state.progress.medals[index])) state.progress.medals[index] = medal;
     state.progress.stageScores[index] = Math.max(state.progress.stageScores[index] || 0, state.stageScore);
@@ -489,7 +490,7 @@
     }
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${STAGES[state.selectedStage].name}`;
     practiceButton.disabled = !assetsReady || state.selectedStage > selectableStage;
-    setupProgress.textContent = `CLEARED ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · cleared stages unlock practice`;
+    setupProgress.textContent = `OPEN ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · PLAY ALL STAGES to unlock more`;
   }
 
   function selectStage(index) {
@@ -572,7 +573,7 @@
     stageTitle.textContent = currentStage().name;
     stageMedalElement.textContent = stageMedalValue();
     state.lives = Math.min(3, state.lives + 1);
-    stageCopy.textContent = state.stageIndex === STAGE_COUNT - 1 ? '모든 궤도를 돌파했습니다.' : '다음 궤도로 진입합니다.';
+    stageCopy.textContent = state.runMode === 'practice' ? '선택한 스테이지를 클리어했습니다. 다음 스테이지는 전체 플레이에서 해금할 수 있습니다.' : state.stageIndex === STAGE_COUNT - 1 ? '모든 궤도를 돌파했습니다.' : '다음 궤도로 진입합니다.';
     stageScoreLine.textContent = `STAGE SCORE ${formatScore(state.stageScore)}`;
     stageTotalScoreLine.textContent = `SCORE ${formatScore(state.score)}`;
     nextStageButton.textContent = state.stageIndex === STAGE_COUNT - 1 ? 'VIEW RESULT' : state.runMode === 'run' ? 'NEXT STAGE' : 'STAGE SELECT';
