@@ -29,6 +29,8 @@
   const skins = window.StellarSkins;
   const SKIN_VARIANTS = { scout: [1, 3], zigzag: [7], shooter: [2, 6], charger: [5], turret: [4, 8], orbiter: [9] };
   const skinCounts = {};
+  const BOSS_SKILLS = ['ram', 'shield', 'laser-cannon', 'fin-panel', 'rapid-fire', 'psionic-storm', 'charger-summon'];
+  const SKILL_LABELS = { ram: 'BODY RAM', shield: 'SHIELD', 'laser-cannon': 'LASER CANNON', 'fin-panel': 'FIN PANEL', 'rapid-fire': 'RAPID FIRE', 'psionic-storm': 'PSIONIC STORM', 'charger-summon': 'CHARGER SUMMON' };
   let assetsReady = false;
   const SHIP = { width: 34, height: 48, speed: 520, hitRadius: 11 };
 
@@ -312,6 +314,14 @@
     if (state.stageIndex <= 3) return currentProfile();
     const step = state.stageIndex - 3;
     return { enemySpeed: .98 + step * .015, bulletSpeed: 1 + step * .012, bulletDensity: .90 + step * .025 };
+  }
+
+  function mobBulletSpeed() {
+    return (170 + mobStageIndex() * 12) * MOB_BULLET_SPEED_MULTIPLIER * mobProfile().bulletSpeed;
+  }
+
+  function bossSkills() {
+    return state.stageIndex === 7 ? BOSS_SKILLS.slice(0, 3) : state.stageIndex === 8 ? BOSS_SKILLS.slice(3, 6) : BOSS_SKILLS;
   }
 
   function formatScore(value) {
@@ -794,6 +804,7 @@
     const hp = Math.ceil((options.hp || stats.hp) * stageScale) * (type === 'turret' ? .5 : 1);
     state.enemies.push({
       skinId,
+      suicide: options.suicide === true,
       type,
       x,
       y,
@@ -959,7 +970,7 @@
     state.hazards.length = 0;
     state.invulnerable = 1;
     for (const enemy of state.enemies) damageEnemy(enemy, 18 + state.stageIndex * 3);
-    if (state.boss) state.boss.hp -= 90 + state.stageIndex * 16;
+    if (state.boss) damageBoss(90 + state.stageIndex * 16);
     showToast('BOMB CLEAR', 1.2);
     playGameSample('bombExplosion', .24);
     updateHud();
@@ -992,6 +1003,10 @@
 
   function clearBombThreats() {
     if (!state.bombEffect || state.stagePhase === 'boss-clear') return;
+    if (state.boss) {
+      if (state.boss.action) { state.boss.y = state.boss.action.fromY; state.boss.action = null; }
+      state.boss.rapidFire = null;
+    }
     state.enemyBullets.length = 0;
     state.hazards.length = 0;
   }
@@ -1042,14 +1057,23 @@
 
   function startBoss() {
     const stage = currentStage();
+    const hpMultiplier = state.stageIndex < 7 ? 1.5 : state.stageIndex === 7 ? 2 : state.stageIndex === 8 ? 2.5 : 3;
+    const sizeMultiplier = state.stageIndex === 9 ? 1.5 : 1;
     state.stagePhase = 'boss';
     state.boss = {
       x: WIDTH / 2,
       y: 175,
-      width: 150,
-      height: 100,
-      hp: stage.profile.bossHp,
-      maxHp: stage.profile.bossHp,
+      width: 150 * sizeMultiplier,
+      height: 100 * sizeMultiplier,
+      hp: stage.profile.bossHp * hpMultiplier,
+      maxHp: stage.profile.bossHp * hpMultiplier,
+      skillIndex: 0,
+      useSkill: true,
+      combatTime: 0,
+      shieldHp: 0,
+      lastShieldActivation: -Infinity,
+      action: null,
+      rapidFire: null,
       phase: 0,
       moveTime: 0,
       patternIndex: 0,
@@ -1074,6 +1098,7 @@
     const profile = currentProfile();
     const palette = currentStage().palette;
     if (!boss) return;
+    if (BOSS_SKILLS.includes(pattern)) { startBossSkill(pattern); return; }
     switch (pattern) {
       case 'dual-aimed':
         spawnAimedBurst(boss.x - 60, boss.y + 35, 3, .34, 230 + state.stageIndex * 10);
@@ -1177,12 +1202,123 @@
     }
   }
 
+  function damageBoss(amount) {
+    const boss = state.boss;
+    if (!boss || boss.hp <= 0) return;
+    const absorbed = Math.min(boss.shieldHp, amount);
+    boss.shieldHp -= absorbed;
+    boss.hp -= amount - absorbed;
+    if (absorbed > 0 && boss.shieldHp === 0) {
+      spawnParticle(boss.x, boss.y, '#72e7ff', 20, 200);
+      showToast('BOSS SHIELD BREAK', 1);
+    }
+  }
+
+  function fireSkillBullet(x, y, multiplier) {
+    const angle = Math.atan2(state.playerY - y, state.playerX - x);
+    const speed = mobBulletSpeed() * multiplier;
+    spawnEnemyBullet(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, { swept: true, color: '#66cfff', radius: 6 });
+  }
+
+  function startBossSkill(pattern) {
+    const boss = state.boss;
+    if (!boss) return;
+    if (pattern === 'shield') {
+      if (boss.shieldHp > 0 || boss.combatTime - boss.lastShieldActivation < 30) return;
+      boss.shieldHp = boss.maxHp * .2;
+      boss.lastShieldActivation = boss.combatTime;
+      return;
+    }
+    if (pattern === 'rapid-fire') {
+      if (!boss.rapidFire) boss.rapidFire = { elapsed: 0, nextShot: 0 };
+      return;
+    }
+    if (pattern === 'charger-summon') {
+      const count = 4 + Math.floor(state.stageIndex / 3);
+      for (let i = 0; i < count; i++) {
+        spawnEnemy('charger', 70 + i * (WIDTH - 140) / (count - 1), -50 - i * 45, { suicide: true });
+      }
+      return;
+    }
+    if (boss.action) return;
+    state.bossDash = null;
+    boss.action = { type: pattern, elapsed: 0, fromX: boss.x, fromY: boss.y, x: state.playerX, y: state.playerY, hit: false, nextShot: 0 };
+  }
+
+  function updateBossSkill(dt) {
+    const boss = state.boss;
+    const rapid = boss.rapidFire;
+    if (rapid) {
+      rapid.elapsed += dt;
+      while (rapid.nextShot < Math.min(rapid.elapsed, 3)) {
+        fireSkillBullet(boss.x, boss.y + 40, 2);
+        rapid.nextShot += .16;
+      }
+      if (rapid.elapsed >= 3) boss.rapidFire = null;
+    }
+    const action = boss.action;
+    if (!action) return false;
+    const previous = action.elapsed;
+    action.elapsed += dt;
+    const t = action.elapsed;
+    if (action.type === 'ram') {
+      if (previous < 1) action.x = clamp(state.playerX, boss.width / 2, WIDTH - boss.width / 2);
+      const oldX = boss.x, oldY = boss.y;
+      if (t <= 1) boss.x = lerp(action.fromX, action.x, t);
+      else {
+        boss.x = action.x;
+        const bottom = HEIGHT - boss.height / 2;
+        boss.y = t <= 2 ? lerp(action.fromY, bottom, t - 1) : lerp(bottom, action.fromY, Math.min(1, t - 2));
+        if (previous < 2 && !action.hit && sweptBulletCollision({ previousX: oldX, previousY: oldY, x: boss.x, y: boss.y, radius: 0 }, { x: state.playerX, y: state.playerY, width: SHIP.width + boss.width, height: SHIP.height + boss.height })) {
+          action.hit = applySkillHit();
+        }
+      }
+      if (t >= 3) boss.action = null;
+    } else if (action.type === 'laser-cannon') {
+      if (previous < 3) {
+        action.x = state.playerX; action.y = state.playerY;
+      }
+      if (previous < 3 && t >= 3) {
+        const x = boss.x, y = boss.y + 40;
+        const angle = Math.atan2(action.y - y, action.x - x);
+        const dx = Math.cos(angle), dy = Math.sin(angle);
+        const distances = [dx > 0 ? (WIDTH - x) / dx : dx < 0 ? -x / dx : Infinity, dy > 0 ? (HEIGHT - y) / dy : dy < 0 ? -y / dy : Infinity];
+        state.hazards.push({ type: 'energy-cannon', x, y, dx, dy, length: Math.min(...distances.filter(d => d >= 0)), elapsed: 0, life: .75, hit: false, width: 80 });
+      }
+      if (t >= 3.75) boss.action = null;
+    } else if (action.type === 'fin-panel') {
+      boss.x = lerp(action.fromX, WIDTH / 2, Math.min(1, t / .5));
+      if (t > 1) {
+        while (action.nextShot < Math.min(t - 1, 5)) {
+          for (const offset of [-240, -150, 150, 240]) fireSkillBullet(boss.x + offset, boss.y + 40, 1.5);
+          action.nextShot += .25;
+        }
+      }
+      if (t >= 6.4) boss.action = null;
+    } else if (action.type === 'psionic-storm') {
+      if (previous < 2) { action.x = clamp(state.playerX, 180, WIDTH - 180); action.y = clamp(state.playerY, 180, HEIGHT - 180); }
+      if (t >= 2 && t < 3.6 && !action.hit && circleRectCollision({ x: state.playerX, y: state.playerY, radius: SHIP.hitRadius }, { x: action.x, y: action.y, width: 360, height: 360 })) action.hit = applySkillHit();
+      if (t >= 3.6) boss.action = null;
+    }
+    return true;
+  }
+
+  function applySkillHit() {
+    if (state.screen !== 'playing' || state.pendingStageClear || state.bombEffect || state.invulnerable > 0 || state.respawnTimer > 0 || state.cheatMode === 'invincible') return false;
+    takeHit();
+    return true;
+  }
+
   function updateBoss(dt) {
     const boss = state.boss;
     if (!boss) return;
     const stage = currentStage();
+    boss.combatTime += dt;
+    if (boss.hp <= 0) { defeatBoss(); return; }
+    if (updateBossSkill(dt)) return;
     boss.moveTime += dt;
-    boss.x = WIDTH / 2 + Math.sin(boss.moveTime * (.55 + state.stageIndex * .025)) * (220 - state.stageIndex * 4);
+    const homeX = WIDTH / 2 + Math.sin(boss.moveTime * (.55 + state.stageIndex * .025)) * (220 - state.stageIndex * 4);
+    boss.x = lerp(boss.x, homeX, Math.min(1, dt * 5));
     if (state.bossDash) {
       state.bossDash.elapsed += dt;
       const amount = clamp(state.bossDash.elapsed / state.bossDash.duration, 0, 1);
@@ -1217,9 +1353,16 @@
       return;
     }
     const phasePatterns = stage.boss.phases[Math.min(boss.phase, stage.boss.phases.length - 1)];
-    boss.pendingPattern = phasePatterns[boss.patternIndex % phasePatterns.length];
-    boss.patternIndex += 1;
-    boss.telegraph = Math.max(.48, .78 - state.stageIndex * .02);
+    if (boss.useSkill) {
+      const skills = bossSkills();
+      let skill = skills[boss.skillIndex++ % skills.length];
+      if (skill === 'shield' && (boss.shieldHp > 0 || boss.combatTime - boss.lastShieldActivation < 30)) skill = skills[boss.skillIndex++ % skills.length];
+      boss.pendingPattern = skill;
+    } else {
+      boss.pendingPattern = phasePatterns[boss.patternIndex++ % phasePatterns.length];
+    }
+    boss.useSkill = !boss.useSkill;
+    boss.telegraph = Math.max(.6, .78 - state.stageIndex * .02);
   }
 
   function defeatBoss() {
@@ -1283,7 +1426,18 @@
         continue;
       }
       enemy.age += dt;
-      if (enemy.type === 'zigzag') {
+      if (enemy.suicide) {
+        const oldX = enemy.x, oldY = enemy.y;
+        const angle = Math.atan2(state.playerY - enemy.y, state.playerX - enemy.x);
+        enemy.x += Math.cos(angle) * enemy.vy * dt;
+        enemy.y += Math.sin(angle) * enemy.vy * dt;
+        if (sweptBulletCollision({ previousX: oldX, previousY: oldY, x: enemy.x, y: enemy.y, radius: 48 }, { x: state.playerX, y: state.playerY, width: 0, height: 0 })) {
+          enemy.dead = true;
+          spawnParticle(enemy.x, enemy.y, '#ff9a43', 18, 190);
+          playGameSample('enemyDestroy', .10);
+          takeHit();
+        }
+      } else if (enemy.type === 'zigzag') {
         enemy.x = enemy.originX + Math.sin(enemy.age * (2.1 + mobStageIndex() * .08) + enemy.phase) * (75 + mobStageIndex() * 4);
         enemy.y += enemy.vy * dt;
       } else if (enemy.type === 'charger') {
@@ -1396,6 +1550,11 @@
     for (let index = state.hazards.length - 1; index >= 0; index -= 1) {
       const hazard = state.hazards[index];
       hazard.life -= dt;
+      if (hazard.type === 'energy-cannon') {
+        hazard.elapsed += dt;
+        const length = hazard.length * Math.min(1, hazard.elapsed / .5);
+        if (!hazard.hit && sweptBulletCollision({ previousX: hazard.x, previousY: hazard.y, x: hazard.x + hazard.dx * length, y: hazard.y + hazard.dy * length, radius: hazard.width / 2 }, playerRect())) hazard.hit = applySkillHit();
+      }
       if (hazard.type === 'vertical-beam') {
         if (hazard.warning > 0) {
           hazard.warning = Math.max(0, hazard.warning - dt);
@@ -1486,8 +1645,9 @@
         consumed = true;
         break;
       }
-      if (!consumed && boss && circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, bossRect())) {
-        boss.hp -= bullet.damage;
+      const shieldContact = boss && boss.shieldHp > 0 && Math.hypot((bullet.x - boss.x) / ((state.stageIndex === 9 ? 210 : 110) + bullet.radius), (bullet.y - boss.y) / ((state.stageIndex === 9 ? 165 : 105) + bullet.radius)) <= 1;
+      if (!consumed && boss && (shieldContact || circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, bossRect()))) {
+        damageBoss(bullet.damage);
         spawnParticle(bullet.x, bullet.y, currentStage().boss.color, 1, 50);
         consumed = true;
       }
@@ -1748,12 +1908,77 @@
     context.restore();
   }
 
+  function drawWarningArrow(symbol, x, y) {
+    context.save();
+    context.font = '900 88px sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+    context.lineWidth = 8; context.strokeStyle = '#081126'; context.fillStyle = '#fff08a';
+    context.shadowColor = '#ffd86e'; context.shadowBlur = 20;
+    context.strokeText(symbol, x, y); context.fillText(symbol, x, y);
+    context.restore();
+  }
+
+  function drawElectricity(x, y, width, height, active) {
+    context.save(); context.strokeStyle = active ? '#baf5ff' : '#759cff'; context.lineWidth = active ? 3 : 2;
+    context.shadowColor = '#377cff'; context.shadowBlur = 15;
+    const tick = Math.floor(state.visualTime * 18);
+    for (let i = 0; i < (active ? 10 : 5); i++) {
+      context.beginPath();
+      for (let j = 0; j < 7; j++) {
+        const px = x - width / 2 + width * j / 6;
+        const py = y + Math.sin(tick * 2.3 + i * 7.1 + j * 5.7) * height * .45;
+        if (j === 0) context.moveTo(px, py); else context.lineTo(px, py);
+      }
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  function drawBossSkill(boss) {
+    context.save();
+    if (boss.shieldHp > 0) {
+      const rx = state.stageIndex === 9 ? 210 : 110, ry = state.stageIndex === 9 ? 165 : 105;
+      context.fillStyle = 'rgba(60,160,255,.15)'; context.strokeStyle = '#77dfff'; context.lineWidth = 5; context.shadowColor = '#258dff'; context.shadowBlur = 22;
+      context.beginPath(); context.ellipse(boss.x, boss.y, rx, ry, 0, 0, Math.PI * 2); context.fill(); context.stroke();
+    }
+    const a = boss.action;
+    if (a) {
+      context.shadowBlur = 0;
+      if (a.type === 'ram' && a.elapsed < 1) {
+        context.fillStyle = 'rgba(255,135,65,.22)'; context.fillRect(a.x - boss.width / 2, boss.y, boss.width, HEIGHT - boss.y);
+        drawWarningArrow('▼', a.x, clamp(state.playerY - 180, 400, HEIGHT - 100));
+      } else if (a.type === 'laser-cannon' && a.elapsed < 3) {
+        const r = 10 + 65 * a.elapsed / 3;
+        const gradient = context.createRadialGradient(boss.x, boss.y + 40, 0, boss.x, boss.y + 40, r);
+        gradient.addColorStop(0, '#efffff'); gradient.addColorStop(.45, '#55ccff'); gradient.addColorStop(1, 'rgba(20,100,255,0)');
+        context.fillStyle = gradient; context.beginPath(); context.arc(boss.x, boss.y + 40, r, 0, Math.PI * 2); context.fill();
+        context.strokeStyle = 'rgba(90,195,255,.55)'; context.setLineDash([12, 12]); context.beginPath(); context.moveTo(boss.x, boss.y + 40); context.lineTo(a.x, a.y); context.stroke(); context.setLineDash([]);
+      } else if (a.type === 'fin-panel') {
+        const spread = Math.min(1, Math.max(0, (a.elapsed - .5) / .5)) * Math.min(1, Math.max(0, (6.4 - a.elapsed) / .4));
+        for (const offset of [-240, -150, 150, 240]) {
+          context.save(); context.translate(boss.x + offset * spread, boss.y + 40);
+          context.fillStyle = '#ced8ef'; context.strokeStyle = '#46d8ff'; context.lineWidth = 3;
+          context.beginPath(); context.moveTo(-11, -35); context.lineTo(11, -27); context.lineTo(9, 32); context.lineTo(0, 45); context.lineTo(-9, 32); context.closePath(); context.fill(); context.stroke();
+          context.fillStyle = '#38cfff'; context.fillRect(-4, 5, 8, 28); context.restore();
+        }
+      } else if (a.type === 'psionic-storm') {
+        context.fillStyle = a.elapsed < 2 ? 'rgba(0,0,0,.65)' : 'rgba(60,80,230,.25)';
+        context.fillRect(a.x - 180, a.y - 180, 360, 360);
+        context.strokeStyle = '#7199ff'; context.lineWidth = 3; context.strokeRect(a.x - 180, a.y - 180, 360, 360);
+        drawElectricity(boss.x, boss.y, 190, 170, false);
+        if (a.elapsed >= 2) drawElectricity(a.x, a.y, 350, 350, true);
+      }
+      context.fillStyle = '#ffd86e'; context.font = '900 15px Inter, sans-serif'; context.textAlign = 'center'; context.fillText(SKILL_LABELS[a.type], WIDTH / 2, 88);
+    }
+    context.restore();
+  }
+
   function drawBoss() {
     const boss = state.boss;
     if (!boss) return;
     const profile = currentStage().boss;
     context.save();
     context.translate(boss.x, boss.y);
+    if (state.stageIndex === 9) context.scale(1.5, 1.5);
     const hasSkin = skins.draw(context, `boss-${state.stageIndex + 1}`, 0, 0, state.stageIndex === 9 ? 260 : 180, state.stageIndex === 9 ? 210 : 180);
     if (!hasSkin) {
     context.fillStyle = profile.color;
@@ -1779,12 +2004,17 @@
     context.stroke();
     }
     context.restore();
+    drawBossSkill(boss);
     const barWidth = 520;
     const barX = (WIDTH - barWidth) / 2;
     context.fillStyle = 'rgba(0,0,0,.45)';
     context.fillRect(barX, 24, barWidth, 12);
     context.fillStyle = profile.color;
     context.fillRect(barX, 24, barWidth * clamp(boss.hp / boss.maxHp, 0, 1), 12);
+    if (boss.shieldHp > 0) {
+      context.fillStyle = '#72e7ff';
+      context.fillRect(barX, 39, barWidth * boss.shieldHp / (boss.maxHp * .2), 5);
+    }
     context.fillStyle = '#f4f8ff';
     context.font = '900 16px Inter, sans-serif';
     context.textAlign = 'center';
@@ -1792,7 +2022,7 @@
     if (boss.telegraph > 0 && boss.pendingPattern) {
       context.fillStyle = '#ffd86e';
       context.font = '900 15px Inter, sans-serif';
-      context.fillText(boss.pendingPattern.toUpperCase(), WIDTH / 2, 88);
+      context.fillText(SKILL_LABELS[boss.pendingPattern] || boss.pendingPattern.toUpperCase(), WIDTH / 2, 88);
     }
   }
 
@@ -1836,9 +2066,7 @@
         context.setLineDash([12, 12]);
         context.strokeRect(hazard.x - hazard.width / 2, 80, hazard.width, HEIGHT - 150);
         context.fillStyle = hazard.color;
-        context.font = 'bold 44px sans-serif';
-        context.textAlign = 'center';
-        context.fillText(hazard.vx > 0 ? '→' : '←', WIDTH / 2, state.playerY - 80);
+        drawWarningArrow(hazard.vx > 0 ? '→' : '←', WIDTH / 2, state.playerY - 80);
         context.restore();
         return;
       }
@@ -1847,6 +2075,11 @@
       context.shadowColor = hazard.color;
       context.shadowBlur = 24;
       context.fillRect(hazard.x - hazard.width / 2, 80, hazard.width, HEIGHT - 150);
+    } else if (hazard.type === 'energy-cannon') {
+      const length = hazard.length * Math.min(1, hazard.elapsed / .5);
+      context.lineCap = 'round'; context.strokeStyle = '#168fff'; context.shadowColor = '#35baff'; context.shadowBlur = 30; context.lineWidth = hazard.width;
+      context.beginPath(); context.moveTo(hazard.x, hazard.y); context.lineTo(hazard.x + hazard.dx * length, hazard.y + hazard.dy * length); context.stroke();
+      context.strokeStyle = '#d8faff'; context.lineWidth = hazard.width * .45; context.stroke();
     } else if (hazard.type === 'mine') {
       context.fillStyle = hazard.color;
       context.globalAlpha = .8;
