@@ -1296,8 +1296,8 @@
       }
       if (t >= 6.4) boss.action = null;
     } else if (action.type === 'psionic-storm') {
-      if (previous < 2) { action.x = clamp(state.playerX, 180, WIDTH - 180); action.y = clamp(state.playerY, 180, HEIGHT - 180); }
-      if (t >= 2 && t < 3.6 && !action.hit && circleRectCollision({ x: state.playerX, y: state.playerY, radius: SHIP.hitRadius }, { x: action.x, y: action.y, width: 360, height: 360 })) action.hit = applySkillHit();
+      // The warning and damaging circle share the position captured at cast time.
+      if (t >= 2 && t < 3.6 && !action.hit && Math.hypot(state.playerX - action.x, state.playerY - action.y) <= 180 + SHIP.hitRadius) action.hit = applySkillHit();
       if (t >= 3.6) boss.action = null;
     }
     return true;
@@ -1933,6 +1933,46 @@
     context.restore();
   }
 
+  function drawStorm(action) {
+    const active = action.elapsed >= 2;
+    const radius = 180;
+    context.save();
+    context.translate(action.x, action.y);
+    context.beginPath(); context.arc(0, 0, radius, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(0,0,15,.68)'; context.fill();
+    context.strokeStyle = active ? '#72dfff' : '#668fff'; context.lineWidth = 3; context.stroke();
+    context.clip();
+    if (active) {
+      const tick = Math.floor(state.visualTime * 24);
+      const glow = context.createRadialGradient(0, 0, 8, 0, 0, radius);
+      glow.addColorStop(0, 'rgba(75,155,255,.42)');
+      glow.addColorStop(.65, 'rgba(35,65,230,.3)');
+      glow.addColorStop(1, 'rgba(25,45,190,.08)');
+      context.fillStyle = glow; context.fillRect(-radius, -radius, radius * 2, radius * 2);
+      // Branching, flickering bolts: deterministic visual noise never changes gameplay RNG.
+      const noise = seed => { const n = Math.sin(seed * 127.1 + tick * 311.7) * 43758.5453; return n - Math.floor(n); };
+      for (let i = 0; i < 12; i++) {
+        const angle = noise(i + 1) * Math.PI * 2;
+        let x = Math.cos(angle) * radius * .85, y = Math.sin(angle) * radius * .85;
+        context.beginPath(); context.moveTo(x, y);
+        for (let j = 0; j < 9; j++) {
+          const nx = x - Math.cos(angle) * 30 + (noise(i * 23 + j + 31) - .5) * 54;
+          const ny = y - Math.sin(angle) * 30 + (noise(i * 29 + j + 71) - .5) * 54;
+          context.lineTo(nx, ny);
+          if (j % 3 === 1) {
+            context.lineTo(nx + (noise(i + j + 181) - .5) * 75, ny + (noise(i + j + 241) - .5) * 75);
+            context.moveTo(nx, ny);
+          }
+          x = nx; y = ny;
+        }
+        context.shadowColor = '#168dff'; context.shadowBlur = 12;
+        context.strokeStyle = 'rgba(25,110,255,.85)'; context.lineWidth = 5; context.stroke();
+        context.strokeStyle = '#b8edff'; context.lineWidth = 1.4; context.stroke();
+      }
+    }
+    context.restore();
+  }
+
   function drawBossSkill(boss) {
     context.save();
     if (boss.shieldHp > 0) {
@@ -1961,11 +2001,8 @@
           context.fillStyle = '#38cfff'; context.fillRect(-4, 5, 8, 28); context.restore();
         }
       } else if (a.type === 'psionic-storm') {
-        context.fillStyle = a.elapsed < 2 ? 'rgba(0,0,0,.65)' : 'rgba(60,80,230,.25)';
-        context.fillRect(a.x - 180, a.y - 180, 360, 360);
-        context.strokeStyle = '#7199ff'; context.lineWidth = 3; context.strokeRect(a.x - 180, a.y - 180, 360, 360);
+        drawStorm(a);
         drawElectricity(boss.x, boss.y, 190, 170, false);
-        if (a.elapsed >= 2) drawElectricity(a.x, a.y, 350, 350, true);
       }
       context.fillStyle = '#ffd86e'; context.font = '900 15px Inter, sans-serif'; context.textAlign = 'center'; context.fillText(SKILL_LABELS[a.type], WIDTH / 2, 88);
     }
