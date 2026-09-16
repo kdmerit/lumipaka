@@ -247,6 +247,7 @@
     stageScoreStart: 0,
     stageScore: 0,
     stageLivesStart: 3,
+    stageBombsStart: 2,
     score: 0,
     lives: 3,
     bombs: 2,
@@ -567,9 +568,10 @@
     state.transitionTimer = 0;
     state.stageScoreStart = state.score;
     state.stageScore = 0;
-    // Only lives are carried into a paused-stage restart. Equipment is reset
-    // so the stage can be replayed from its basic loadout.
+    // Lives and bombs carried into a paused-stage restart are snapshotted.
+    // Equipment is reset so the stage can be replayed from its basic loadout.
     state.stageLivesStart = state.lives;
+    state.stageBombsStart = state.bombs;
     state.playerX = WIDTH / 2;
     state.playerY = PLAYER_REAR_Y;
     state.pointerTargetX = state.playerX;
@@ -676,7 +678,7 @@
     emitAnalytics('level_end', { level_name: `stage-${String(state.stageIndex + 1).padStart(2, '0')}`, success: false });
     state.score = state.stageScoreStart;
     state.lives = Number.isFinite(state.stageLivesStart) ? state.stageLivesStart : 3;
-    state.bombs = 2;
+    state.bombs = Number.isFinite(state.stageBombsStart) ? Math.max(0, Math.min(3, state.stageBombsStart)) : 2;
     state.bombCooldown = 0;
     state.shield = 0;
     resetModules();
