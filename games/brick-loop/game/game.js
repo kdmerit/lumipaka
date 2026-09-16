@@ -158,9 +158,9 @@
     { name: 'CROSS CURRENT', pattern: BRICK_PATTERNS[4], obstacles: [] },
     { name: 'HOURGLASS', pattern: BRICK_PATTERNS[5], obstacles: [] },
     { name: 'BUTTERFLY ARRAY', pattern: ['#.....#', '###.###', '#######', '.#####.', '#######', '###.###', '#.....#'], obstacles: [] },
-    { name: 'CHECKER CORE', pattern: BRICK_PATTERNS[7], obstacles: [[2, 2], [2, 4], [4, 2], [4, 4]] },
-    { name: 'IRON MAZE', pattern: ['#######', '#...#.#', '#.#.#.#', '#.#...#', '#...#.#', '#.#.#.#', '#######'], obstacles: [[1, 0], [1, 4], [3, 2], [5, 2], [5, 4]] },
-    { name: 'FINAL TARGET', pattern: ['...#...', '..###..', '.#####.', '##.###.', '.#####.', '..###..', '...#...'], obstacles: [[1, 2], [1, 4], [3, 3], [5, 2], [5, 4]] }
+    { name: 'CHECKER CORE', pattern: BRICK_PATTERNS[7], obstacles: [[2, 2], [4, 4]] },
+    { name: 'IRON MAZE', pattern: ['#######', '#...#.#', '#.#.#.#', '#.#...#', '#...#.#', '#.#.#.#', '#######'], obstacles: [[1, 0], [5, 4]] },
+    { name: 'FINAL TARGET', pattern: ['...#...', '..###..', '.#####.', '##.###.', '.#####.', '..###..', '...#...'], obstacles: [[3, 3], [5, 2]] }
   ];
   const itemTypes = [
     { key: 'wide', label: 'W', name: 'WIDE', color: '#b8f36b', duration: 10, weight: 30 },
@@ -698,6 +698,29 @@
     emitAnalytics('lumipaka_game_end', { result: 'clear', score, level: state.level });
   }
 
+  function reflectBallFromBrick(currentBall, brick, previousX, previousY) {
+    const radius = currentBall.radius;
+    const hitFromLeft = previousX + radius <= brick.x && currentBall.x + radius >= brick.x;
+    const hitFromRight = previousX - radius >= brick.x + brick.width && currentBall.x - radius <= brick.x + brick.width;
+    const hitFromTop = previousY + radius <= brick.y && currentBall.y + radius >= brick.y;
+    const hitFromBottom = previousY - radius >= brick.y + brick.height && currentBall.y - radius <= brick.y + brick.height;
+    if ((hitFromLeft || hitFromRight) && !(hitFromTop || hitFromBottom)) {
+      currentBall.x = hitFromLeft ? brick.x - radius : brick.x + brick.width + radius;
+      currentBall.vx *= -1;
+      return;
+    }
+    if (hitFromTop || hitFromBottom) {
+      currentBall.y = hitFromTop ? brick.y - radius : brick.y + brick.height + radius;
+      currentBall.vy *= -1;
+      return;
+    }
+    // If a frame starts inside a block, reflect across the shallowest overlap.
+    const overlapX = Math.min(Math.abs(currentBall.x + radius - brick.x), Math.abs(brick.x + brick.width - (currentBall.x - radius)));
+    const overlapY = Math.min(Math.abs(currentBall.y + radius - brick.y), Math.abs(brick.y + brick.height - (currentBall.y - radius)));
+    if (overlapX < overlapY) currentBall.vx *= -1;
+    else currentBall.vy *= -1;
+  }
+
   function circleIntersectsRect(circle, rect) {
     const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
     const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
@@ -931,6 +954,8 @@
       let alive = true;
       for (let step = 0; step < stepCount; step += 1) {
         primeApproachingHitSound(currentBall, paddleRect);
+        const previousX = currentBall.x;
+        const previousY = currentBall.y;
         currentBall.x += currentBall.vx * stepDelta;
         currentBall.y += currentBall.vy * stepDelta;
 
@@ -955,7 +980,7 @@
         for (const brick of state.bricks) {
           if (!brick.alive || !circleIntersectsRect(currentBall, brick)) continue;
           if (brick.indestructible) {
-            currentBall.vy *= -1;
+            reflectBallFromBrick(currentBall, brick, previousX, previousY);
             playCollisionSfx(currentBall, brick);
             break;
           }
@@ -963,7 +988,7 @@
           state.score += 10 * state.level * (state.effects.double > 0 ? 2 : 1);
           scoreElement.textContent = String(Math.floor(state.score));
           maybeDropItem(brick);
-          if (state.effects.fire <= 0) currentBall.vy *= -1;
+          if (state.effects.fire <= 0) reflectBallFromBrick(currentBall, brick, previousX, previousY);
           playCollisionSfx(currentBall, brick);
           break;
         }
