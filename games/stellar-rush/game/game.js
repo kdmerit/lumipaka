@@ -240,6 +240,7 @@
     transitionTimer: 0,
     stageScoreStart: 0,
     stageScore: 0,
+    stageStartResources: { lives: 3, bombs: 2, modules: { split: 0, missile: 0, spread: 0 } },
     score: 0,
     lives: 3,
     bombs: 2,
@@ -551,6 +552,13 @@
     state.transitionTimer = 0;
     state.stageScoreStart = state.score;
     state.stageScore = 0;
+    // Snapshot the resources carried into this stage. PAUSED → RESTART restores
+    // this exact snapshot while deliberately clearing the temporary shield.
+    state.stageStartResources = {
+      lives: state.lives,
+      bombs: state.bombs,
+      modules: { split: state.modules.split, missile: state.modules.missile, spread: state.modules.spread }
+    };
     state.playerX = WIDTH / 2;
     state.playerY = PLAYER_REAR_Y;
     state.pointerTargetX = state.playerX;
@@ -656,11 +664,13 @@
     if (state.screen !== 'paused') return;
     emitAnalytics('level_end', { level_name: `stage-${String(state.stageIndex + 1).padStart(2, '0')}`, success: false });
     state.score = state.stageScoreStart;
-    state.lives = 3;
-    state.bombs = 2;
+    const startResources = state.stageStartResources || { lives: 3, bombs: 2, modules: { split: 0, missile: 0, spread: 0 } };
+    state.lives = Number.isFinite(startResources.lives) ? startResources.lives : 3;
+    state.bombs = Number.isFinite(startResources.bombs) ? startResources.bombs : 2;
     state.bombCooldown = 0;
     state.shield = 0;
-    resetModules();
+    for (const moduleName of MODULES) state.modules[moduleName] = Number.isFinite(startResources.modules?.[moduleName]) ? startResources.modules[moduleName] : 0;
+    state.missileTimer = 0;
     resetControlInput();
     state.fireTimer = .1;
     state.toastTimer = 0;
