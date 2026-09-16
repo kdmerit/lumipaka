@@ -55,9 +55,10 @@
   const PROGRESS_KEY = 'brick-loop-progress-v1';
   const BASE_PADDLE_WIDTH = 150;
   const CURRENT_BALL_SPEED = 500;
-  // Stage 01 is 1.5x the former speed and becomes the new base. Stage 10 is 5x that base.
-  const BASE_BALL_SPEED = CURRENT_BALL_SPEED * 1.5;
-  const FINAL_BALL_SPEED = BASE_BALL_SPEED * 5;
+  const PREVIOUS_BASE_BALL_SPEED = CURRENT_BALL_SPEED * 1.5;
+  // Stage 01 is 0.8x the current 750 base (600), and Stage 10 is 3x that new base.
+  const BASE_BALL_SPEED = PREVIOUS_BASE_BALL_SPEED * 0.8;
+  const FINAL_BALL_SPEED = BASE_BALL_SPEED * 3;
   const STAGE_SPEED_STEP = (FINAL_BALL_SPEED - BASE_BALL_SPEED) / (STAGE_COUNT - 1);
   const MAX_BALL_TRAVEL_PER_STEP = 18;
   const MAX_LIVES = 3;
@@ -108,6 +109,8 @@
     selectedStage: 0,
     stageIndex: 0,
     runMode: 'run',
+    testMode: false,
+    cheatTaps: 0,
     progress: readProgress(),
     lastTime: 0,
     pointerX: null,
@@ -408,7 +411,9 @@
   }
 
   function renderStageButtons() {
-    const selectableStage = Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
+    const selectableStage = state.testMode
+      ? STAGE_COUNT - 1
+      : Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
     state.selectedStage = Math.max(0, Math.min(selectableStage, state.selectedStage));
     stageGrid.innerHTML = '';
     for (let index = 0; index < STAGE_COUNT; index += 1) {
@@ -426,20 +431,32 @@
     }
     const config = STAGE_CONFIGS[state.selectedStage];
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${config.name}`;
-    setupProgress.textContent = `OPEN ${Math.min(STAGE_COUNT, selectableStage + 1)}/${STAGE_COUNT} · PLAY ALL STAGES to unlock more`;
+    setupProgress.textContent = state.testMode
+      ? 'TEST MODE ACTIVE · ALL STAGES OPEN · RECORDS DISABLED'
+      : `OPEN ${Math.min(STAGE_COUNT, selectableStage + 1)}/${STAGE_COUNT} · PLAY ALL STAGES to unlock more`;
     playSelectedButton.disabled = state.selectedStage > selectableStage;
   }
 
   function selectStage(index) {
-    const selectableStage = Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
+    const selectableStage = state.testMode
+      ? STAGE_COUNT - 1
+      : Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
     if (!Number.isInteger(index) || index < 0 || index > selectableStage) return;
     state.selectedStage = index;
     renderStageButtons();
   }
 
+  function activateTestMode() {
+    state.testMode = true;
+    state.cheatTaps = 0;
+    renderStageButtons();
+    setupProgress.setAttribute('aria-label', '테스트 모드 활성화: 모든 스테이지 선택 가능, 기록 저장 안 함');
+  }
+
   function showSetup() {
     state.active = false;
     state.paused = false;
+    state.cheatTaps = 0;
     state.awaitingLaunch = false;
     state.waiting = 0;
     state.deathPause = 0;
@@ -456,6 +473,29 @@
     updatePauseToggle();
     updateLaunchPrompt();
     draw();
+  }
+
+  function handleTestModeTap(event) {
+    if (state.testMode) return;
+    if (state.active || setupOverlay.classList.contains('hidden')) {
+      state.cheatTaps = 0;
+      return;
+    }
+    const target = event.target instanceof Element ? event.target.closest('.score-stat, .lives-stat') : null;
+    if (!target) {
+      state.cheatTaps = 0;
+      return;
+    }
+    if (state.cheatTaps < 5) {
+      state.cheatTaps = target.classList.contains('score-stat') ? state.cheatTaps + 1 : 0;
+      return;
+    }
+    if (target.classList.contains('lives-stat')) {
+      state.cheatTaps += 1;
+      if (state.cheatTaps === 10) activateTestMode();
+    } else {
+      state.cheatTaps = 0;
+    }
   }
 
   function makeBricks() {
@@ -569,7 +609,7 @@
     stopAllAudio();
     playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
-    if (score > state.best) {
+    if (!state.testMode && score > state.best) {
       state.best = score;
       localStorage.setItem('brick-loop-best', String(score));
     }
@@ -589,7 +629,7 @@
     overlay.classList.remove('hidden');
     emit('game-over', { score, level: state.level });
     emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: false });
-    emitAnalytics('post_score', { score, level: state.level, character: 'player' });
+    if (!state.testMode) emitAnalytics('post_score', { score, level: state.level, character: 'player' });
     emitAnalytics('lumipaka_game_end', { result: 'game_over', score, level: state.level });
   }
 
@@ -617,7 +657,7 @@
     state.items = [];
     stopAllAudio();
     playTrack(audioTracks.victory);
-    if (state.runMode === 'run') {
+    if (state.runMode === 'run' && !state.testMode) {
       const nextStage = Math.min(STAGE_COUNT - 1, state.level);
       if (nextStage > state.progress.unlockedStage) {
         state.progress.unlockedStage = nextStage;
@@ -638,7 +678,7 @@
     state.pointerInput = null;
     stopAllAudio();
     const score = Math.floor(state.score);
-    if (score > state.best) {
+    if (!state.testMode && score > state.best) {
       state.best = score;
       localStorage.setItem('brick-loop-best', String(score));
     }
@@ -654,7 +694,7 @@
     stageSelectButton.hidden = false;
     overlay.classList.remove('hidden');
     emit('game-clear', { score, level: state.level, mode: state.runMode });
-    emitAnalytics('post_score', { score, level: state.level, character: 'player' });
+    if (!state.testMode) emitAnalytics('post_score', { score, level: state.level, character: 'player' });
     emitAnalytics('lumipaka_game_end', { result: 'clear', score, level: state.level });
   }
 
@@ -1113,6 +1153,7 @@
     else start(0, 'run');
   });
   stageSelectButton.addEventListener('click', showSetup);
+  document.addEventListener('pointerdown', handleTestModeTap, true);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
