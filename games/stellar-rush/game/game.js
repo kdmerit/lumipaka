@@ -22,6 +22,7 @@
   const MISSILE = { speed: 700, damage: 14, turnRate: 6, life: 2, intervals: [0, 2, 1, .5] };
   const AUDIO_SAMPLES = {
     enemyDestroy: './audio-samples/enemy_destroy.wav',
+    playerDestroy: './audio-samples/player_destroy.wav',
     subBolt: './audio-samples/low-03-sub-bolt.wav',
     bassPlasma: './audio-samples/low-01-bass-plasma.wav',
     itemGet: './audio-samples/item_get2.wav', bombExplosion: './audio-samples/bomb_explosion.wav',
@@ -1706,7 +1707,7 @@
     state.pointerTargetX = state.playerX;
     state.pointerTargetY = state.playerY;
     spawnParticle(state.playerX, state.playerY, '#ff789d', 22, 260);
-    playTone('hit');
+    playGameSample('playerDestroy', .20);
     showToast(state.lives > 0 ? 'MODULES LOST' : 'LAST LIFE', 1.1);
     if (state.lives <= 0) {
       state.screen = 'result';

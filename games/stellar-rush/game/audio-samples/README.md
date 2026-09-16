@@ -2,7 +2,7 @@
 
 ## 잡몹 격추음
 
-`enemy_destroy.wav`는 사용자가 제공한 `bomb_explosion.wav`의 첫 0.3초를 추출하고 DC 오프셋 제거, 짧은 어택·지수 감쇠·끝 페이드로 다듬은 소형 폭발음이다. 48kHz stereo 16-bit PCM, 피크 -3.1dBFS이며 잡몹 격추당 gain 0.10으로 기존 컴프레서를 통해 재생한다. 사운드 OFF 또는 샘플 로딩 실패 시 재생을 건너뛴다. 재생성: `python games/stellar-rush/tools/render-enemy-explosion.py`. 원본 폭탄음과 플레이어 피격음은 유지한다.
+`enemy_destroy.wav`는 사용자가 제공한 `bomb_explosion.wav`의 첫 0.3초를 추출하고 DC 오프셋 제거, 짧은 어택·지수 감쇠·끝 페이드로 다듬은 소형 폭발음이다. 48kHz stereo 16-bit PCM, 피크 -3.1dBFS이며 잡몹 격추당 gain 0.10으로 기존 컴프레서를 통해 재생한다. `player_destroy.wav`는 같은 원본의 저음과 잔향을 살린 1초 버전이며, 아군 전투기 목숨 감소 시 gain 0.20으로 한 번 재생한다. 두 샘플 모두 사운드 OFF 또는 로딩 실패 시 재생을 건너뛴다. 재생성 도구는 `games/stellar-rush/tools/render-enemy-explosion.py`와 `games/stellar-rush/tools/render-player-explosion-preview.cjs --grand`다.
 
 ## 시작 화면 로딩
 
