@@ -8,7 +8,7 @@
   const PROGRESS_KEY = 'stellar-rush-progress-v1';
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 2;
-  const MAX_MODULE_BONUS = 200;
+  const MAX_PICKUP_BONUS = 200;
   const PICKUP_DROP_RATE = .1275;
   const TURRET_PICKUP_DROP_RATE = .14875;
   const MOB_BULLET_COLOR = '#FF781F';
@@ -1064,9 +1064,9 @@
     if (MODULES.includes(pickup.type)) {
       const currentLevel = state.modules[pickup.type];
       if (currentLevel >= MAX_MODULE_LEVEL) {
-        state.score += MAX_MODULE_BONUS;
-        state.stageScore += MAX_MODULE_BONUS;
-        showToast(`SCORE +${MAX_MODULE_BONUS}`, 1.1);
+        state.score += MAX_PICKUP_BONUS;
+        state.stageScore += MAX_PICKUP_BONUS;
+        showToast(`SCORE +${MAX_PICKUP_BONUS}`, 1.1);
       } else {
         if (pickup.type === 'split') state.modules.spread = 0;
         if (pickup.type === 'spread') state.modules.split = 0;
@@ -1075,8 +1075,14 @@
         showToast(`${pickup.type.toUpperCase()} +${state.modules[pickup.type]}`, 1.1);
       }
     } else if (pickup.type === 'bomb') {
-      state.bombs = Math.min(3, state.bombs + 1);
-      showToast('BOMB +1', 1.1);
+      if (state.bombs >= 3) {
+        state.score += MAX_PICKUP_BONUS;
+        state.stageScore += MAX_PICKUP_BONUS;
+        showToast(`SCORE +${MAX_PICKUP_BONUS}`, 1.1);
+      } else {
+        state.bombs += 1;
+        showToast('BOMB +1', 1.1);
+      }
     } else if (pickup.type === 'shield') {
       state.shield = 1;
       showToast('SHIELD READY', 1.1);
