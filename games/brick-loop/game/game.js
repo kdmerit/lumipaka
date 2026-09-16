@@ -12,6 +12,7 @@
   const startButton = document.querySelector('#start-button');
   const scoreElement = document.querySelector('#score');
   const bestElement = document.querySelector('#best');
+  const levelElement = document.querySelector('#level');
   const livesElement = document.querySelector('#lives');
   const pauseToggle = document.querySelector('#pause-toggle');
   const pauseOverlay = document.querySelector('#pause-overlay');
@@ -47,12 +48,14 @@
   const BASE_BALL_SPEED = 500;
   const LEVEL_SPEED_STEP = 25;
   const MAX_BALL_SPEED = 750;
+  const MAX_LIVES = 3;
   const LIFE_LOSS_PAUSE = 0.9;
   const LEVEL_CLEAR_PAUSE = 5;
   const ITEM_DROP_CHANCE = 0.1;
   const ITEM_DROP_HEIGHT = 36;
   const SHIELD_Y = HEIGHT - 28;
   const HIT_SOUND_LOOKAHEAD = 0.5;
+  const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: BASE_PADDLE_WIDTH, height: 16, speed: 660 };
@@ -64,7 +67,7 @@
     awaitingLaunch: false,
     score: 0,
     best: Number(localStorage.getItem('brick-loop-best') || 0),
-    lives: 3,
+    lives: MAX_LIVES,
     level: 1,
     lastTime: 0,
     pointerX: null,
@@ -149,11 +152,9 @@
     { key: 'multi', label: '3', name: 'MULTI', color: '#a590ff', weight: 20 },
     { key: 'shield', label: 'S', name: 'SHIELD', color: '#74d8ff', weight: 20 },
     { key: 'fire', label: 'F', name: 'FIRE', color: '#ff9f43', duration: 6, weight: 12 },
-    { key: 'double', label: '×2', name: 'DOUBLE', color: '#ffd166', duration: 10, weight: 12 },
-    { key: 'life', label: '+1', name: 'LIFE', color: '#ff8bc9', weight: 6 }
+    { key: 'double', label: '×2', name: 'DOUBLE', color: '#ffd166', duration: 10, weight: 12 }
   ];
   const itemTypeMap = Object.fromEntries(itemTypes.map((item) => [item.key, item]));
-  bestElement.textContent = String(state.best);
 
   function emit(event, payload = {}) {
     if (window.parent !== window) {
@@ -368,6 +369,21 @@
     }
   }
 
+  function updateHud() {
+    state.lives = Math.max(0, Math.min(MAX_LIVES, Math.floor(state.lives)));
+    scoreElement.textContent = String(Math.floor(state.score));
+    levelElement.textContent = String(state.level).padStart(2, '0');
+    bestElement.textContent = String(state.best);
+    const lifeSignature = String(state.lives);
+    if (livesElement.dataset.count === lifeSignature) return;
+    livesElement.innerHTML = Array.from(
+      { length: MAX_LIVES },
+      (_, index) => `<span class="heart${index < state.lives ? '' : ' empty'}">${HEART_ICON}</span>`
+    ).join('');
+    livesElement.dataset.count = lifeSignature;
+    livesElement.setAttribute('aria-label', `남은 목숨 ${state.lives}개`);
+  }
+
   function updatePowerupStatus() {
     const active = [];
     if (state.effects.wide > 0) active.push(`WIDE ${Math.ceil(state.effects.wide)}s`);
@@ -463,7 +479,7 @@
     state.paused = false;
     state.awaitingLaunch = false;
     state.score = 0;
-    state.lives = 3;
+    state.lives = MAX_LIVES;
     state.level = 1;
     state.lastTime = 0;
     state.pointerX = null;
@@ -476,9 +492,8 @@
     state.victoryPause = 0;
     paddle.width = BASE_PADDLE_WIDTH;
     paddle.x = WIDTH / 2;
-    livesElement.textContent = String(state.lives);
-    scoreElement.textContent = '0';
     makeBricks();
+    updateHud();
     // Hold the opening ball on the paddle until the player chooses a launch moment.
     resetBall(ball, 0.8, true);
     updatePowerupStatus();
@@ -510,8 +525,8 @@
     if (score > state.best) {
       state.best = score;
       localStorage.setItem('brick-loop-best', String(score));
-      bestElement.textContent = String(score);
     }
+    updateHud();
     state.items = [];
     state.balls = [ball];
     state.effects = { wide: 0, fire: 0, double: 0, shield: false };
@@ -540,6 +555,7 @@
     state.balls = [ball];
     // Each new level starts with the ball held on the paddle as well.
     resetBall(ball, 0.8, true);
+    updateHud();
     updatePowerupStatus();
     emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
   }
@@ -678,10 +694,6 @@
     if (type.key === 'shield') state.effects.shield = true;
     if (type.key === 'fire') state.effects.fire = type.duration;
     if (type.key === 'double') state.effects.double = type.duration;
-    if (type.key === 'life') {
-      state.lives = Math.min(5, state.lives + 1);
-      livesElement.textContent = String(state.lives);
-    }
     updatePowerupStatus();
     emit('item-collected', { type: type.key, name: type.name });
   }
@@ -718,8 +730,8 @@
   }
 
   function beginLifeLoss(missedBall) {
-    state.lives -= 1;
-    livesElement.textContent = String(state.lives);
+    state.lives = Math.max(0, state.lives - 1);
+    updateHud();
     if (state.lives <= 0) {
       gameOver();
       return;
@@ -1070,6 +1082,7 @@
   });
 
   makeBricks();
+  updateHud();
   updateSoundToggle();
   updatePauseToggle();
   updateLaunchPrompt();

@@ -4,14 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Brick Loop</title>
-    <link rel="stylesheet" href="./game.css?v=2026-09-16T05%3A53%3A48.787Z" />
+    <link rel="stylesheet" href="./game.css?v=2026-09-16T06%3A27%3A12.700Z" />
   </head>
   <body>
     <main class="game-shell">
-      <header class="hud">
-        <div><span class="label">SCORE</span><strong id="score">0</strong></div>
+      <header class="hud" aria-label="Brick Loop 현재 상태">
+        <div class="score-stat"><span class="label">SCORE</span><strong id="score">0</strong></div>
         <div class="center-title">BRICK <em>LOOP</em></div>
-        <div class="right-hud"><span class="label">BEST <b id="best">0</b></span><span class="label">LIVES <b id="lives">3</b></span></div>
+        <div class="right-hud">
+          <div class="hud-stat level-stat"><span class="label">LEVEL</span><strong class="level-value"><span id="level">01</span><small>/30</small></strong></div>
+          <div class="hud-stat"><span class="label">BEST</span><b id="best">0</b></div>
+          <div class="hud-stat lives-stat"><span class="label">LIVES</span><strong id="lives" role="img" aria-label="남은 목숨 3개"></strong></div>
+        </div>
       </header>
       <div class="powerup-status" id="powerups" aria-live="polite">POWER-UPS —</div>
       <section class="canvas-wrap">
@@ -39,7 +43,7 @@
         </div>
       </div>
     </main>
-    <script src="./game.js?v=2026-09-16T05%3A53%3A48.787Z"></script>
-    <script src="../../../assets/game-frame-bridge.js?v=2026-09-16T05%3A53%3A48.787Z"></script>
+    <script src="./game.js?v=2026-09-16T06%3A27%3A12.700Z"></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-16T06%3A27%3A12.700Z"></script>
 </body>
 </html>
