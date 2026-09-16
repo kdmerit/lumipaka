@@ -68,6 +68,7 @@
     level: 1,
     lastTime: 0,
     pointerX: null,
+    pointerInput: null,
     soundEnabled: localStorage.getItem('brick-loop-sound') !== 'off',
     keys: { left: false, right: false },
     bricks: [],
@@ -336,6 +337,7 @@
     state.keys.left = false;
     state.keys.right = false;
     state.pointerX = null;
+    state.pointerInput = null;
     if (state.paused) {
       pauseGameAudio();
     } else {
@@ -465,6 +467,7 @@
     state.level = 1;
     state.lastTime = 0;
     state.pointerX = null;
+    state.pointerInput = null;
     state.items = [];
     state.balls = [ball];
     state.effects = { wide: 0, fire: 0, double: 0, shield: false };
@@ -476,7 +479,8 @@
     livesElement.textContent = String(state.lives);
     scoreElement.textContent = '0';
     makeBricks();
-    resetBall();
+    // Hold the opening ball on the paddle until the player chooses a launch moment.
+    resetBall(ball, 0.8, true);
     updatePowerupStatus();
   }
 
@@ -499,6 +503,7 @@
     state.active = false;
     state.paused = false;
     state.awaitingLaunch = false;
+    state.pointerInput = null;
     stopAllAudio();
     playTrack(audioTracks.gameOver);
     const score = Math.floor(state.score);
@@ -533,7 +538,8 @@
     state.powerupUiTimer = 0;
     paddle.width = BASE_PADDLE_WIDTH;
     state.balls = [ball];
-    resetBall(ball);
+    // Each new level starts with the ball held on the paddle as well.
+    resetBall(ball, 0.8, true);
     updatePowerupStatus();
     emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
   }
@@ -724,6 +730,7 @@
     state.victoryPause = 0;
     state.waiting = 0;
     state.pointerX = null;
+    state.pointerInput = null;
     state.keys.left = false;
     state.keys.right = false;
     state.awaitingLaunch = false;
@@ -955,44 +962,87 @@
     state.pointerX = Math.max(paddle.width / 2, Math.min(WIDTH - paddle.width / 2, ((clientX - bounds.left) / bounds.width) * WIDTH));
   }
 
-  function setTouchPointer(event) {
-    const touch = event.touches[0] || event.changedTouches[0];
-    if (!touch) return;
-    event.preventDefault();
-    setPointerX(touch.clientX);
+  function startPointer(event) {
+    if (!state.active || state.paused) return;
+    if (event.pointerType === 'touch') event.preventDefault();
+    setPointer(event);
+    state.pointerInput = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can be unavailable in embedded browsers.
+    }
+  }
+
+  function movePointer(event) {
+    if (!state.active || state.paused || !state.pointerInput || state.pointerInput.id !== event.pointerId) return;
+    if (event.pointerType === 'touch') event.preventDefault();
+    if (Math.abs(event.clientX - state.pointerInput.x) > 8 || Math.abs(event.clientY - state.pointerInput.y) > 8) {
+      state.pointerInput.moved = true;
+    }
+    setPointer(event);
+  }
+
+  function endPointer(event) {
+    if (!state.pointerInput || state.pointerInput.id !== event.pointerId) return;
+    if (event.pointerType === 'touch') event.preventDefault();
+    setPointer(event);
+    // Apply the final drag position before attaching or launching the ball.
+    if (state.pointerX !== null) paddle.x = state.pointerX;
+    const shouldLaunch = state.active && !state.paused && state.awaitingLaunch && state.waiting <= 0 && !state.pointerInput.moved;
+    state.pointerInput = null;
+    state.pointerX = null;
+    if (shouldLaunch) launchBall();
   }
 
   startButton.addEventListener('click', start);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
-  canvas.addEventListener('pointerdown', (event) => {
-    if (!state.active || state.paused) return;
-    if (event.pointerType === 'touch') event.preventDefault();
-    canvas.setPointerCapture(event.pointerId);
-    if (state.awaitingLaunch && state.waiting <= 0) launchBall();
-    setPointer(event);
-  });
-  canvas.addEventListener('pointermove', (event) => {
-    if (!state.active || state.paused) return;
-    if (event.pointerType === 'touch' || event.buttons || event.pressure > 0) {
-      if (event.pointerType === 'touch') event.preventDefault();
-      setPointer(event);
-    }
-  });
-  const releasePointer = () => { state.pointerX = null; };
-  canvas.addEventListener('pointerup', releasePointer);
+  canvas.addEventListener('pointerdown', startPointer, { passive: false });
+  canvas.addEventListener('pointermove', movePointer, { passive: false });
+  canvas.addEventListener('pointerup', endPointer, { passive: false });
+  const releasePointer = () => {
+    state.pointerInput = null;
+    state.pointerX = null;
+  };
   canvas.addEventListener('pointercancel', releasePointer);
   canvas.addEventListener('lostpointercapture', releasePointer);
-  canvas.addEventListener('touchstart', (event) => {
-    if (state.active && !state.paused) {
-      if (state.awaitingLaunch && state.waiting <= 0) launchBall();
-      setTouchPointer(event);
-    }
-  }, { passive: false });
-  canvas.addEventListener('touchmove', (event) => { if (state.active && !state.paused) setTouchPointer(event); }, { passive: false });
-  canvas.addEventListener('touchend', releasePointer, { passive: true });
-  canvas.addEventListener('touchcancel', releasePointer, { passive: true });
+
+  // Older embedded WebViews can lack Pointer Events even though they support touch input.
+  if (!window.PointerEvent) {
+    canvas.addEventListener('touchstart', (event) => {
+      const touch = event.touches[0];
+      if (!touch || !state.active || state.paused) return;
+      event.preventDefault();
+      setPointerX(touch.clientX);
+      state.pointerInput = { id: 'legacy-touch', x: touch.clientX, y: touch.clientY, moved: false };
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (event) => {
+      const touch = event.touches[0];
+      if (!touch || !state.pointerInput || state.pointerInput.id !== 'legacy-touch') return;
+      event.preventDefault();
+      if (Math.abs(touch.clientX - state.pointerInput.x) > 8 || Math.abs(touch.clientY - state.pointerInput.y) > 8) {
+        state.pointerInput.moved = true;
+      }
+      setPointerX(touch.clientX);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch || !state.pointerInput || state.pointerInput.id !== 'legacy-touch') return;
+      event.preventDefault();
+      setPointerX(touch.clientX);
+      if (state.pointerX !== null) paddle.x = state.pointerX;
+      const shouldLaunch = state.active && !state.paused && state.awaitingLaunch && state.waiting <= 0 && !state.pointerInput.moved;
+      state.pointerInput = null;
+      state.pointerX = null;
+      if (shouldLaunch) launchBall();
+    }, { passive: false });
+
+    canvas.addEventListener('touchcancel', releasePointer, { passive: false });
+  }
   window.addEventListener('keydown', (event) => {
     if (!event.repeat && (event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
       if (state.active) {
