@@ -2079,7 +2079,8 @@
     const labels = { split: 'S', missile: 'M', spread: 'W', bomb: 'B', shield: 'S', score: '★' };
     context.save();
     context.translate(pickup.x, pickup.y);
-    context.scale(1.8, 1.8);
+    const pickupScale = pickup.type === 'score' ? 1.44 : 1.8;
+    context.scale(pickupScale, pickupScale);
     if (skins.draw(context, `pickup-${pickup.type}`, 0, 0, 42, 42)) { context.restore(); return; }
     context.fillStyle = colors[pickup.type];
     context.shadowColor = colors[pickup.type];
