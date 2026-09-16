@@ -6,10 +6,17 @@
     gameShell.addEventListener(eventName, (event) => event.preventDefault());
   }
   const context = canvas.getContext('2d');
+  const setupOverlay = document.querySelector('#setup-overlay');
   const overlay = document.querySelector('#overlay');
   const overlayTitle = document.querySelector('#overlay-title');
   const overlayCopy = document.querySelector('#overlay-copy');
   const startButton = document.querySelector('#start-button');
+  const stageSelectButton = document.querySelector('#stage-select-button');
+  const stageGrid = document.querySelector('#stage-grid');
+  const selectedStageLabel = document.querySelector('#selected-stage-label');
+  const setupProgress = document.querySelector('#setup-progress');
+  const playAllButton = document.querySelector('#play-all-button');
+  const playSelectedButton = document.querySelector('#play-selected-button');
   const scoreElement = document.querySelector('#score');
   const bestElement = document.querySelector('#best');
   const levelElement = document.querySelector('#level');
@@ -44,10 +51,15 @@
 
   const WIDTH = 720;
   const HEIGHT = 960;
+  const STAGE_COUNT = 10;
+  const PROGRESS_KEY = 'brick-loop-progress-v1';
   const BASE_PADDLE_WIDTH = 150;
-  const BASE_BALL_SPEED = 500;
-  const LEVEL_SPEED_STEP = 25;
-  const MAX_BALL_SPEED = 750;
+  const CURRENT_BALL_SPEED = 500;
+  // Stage 01 is 1.5x the former speed and becomes the new base. Stage 10 is 5x that base.
+  const BASE_BALL_SPEED = CURRENT_BALL_SPEED * 1.5;
+  const FINAL_BALL_SPEED = BASE_BALL_SPEED * 5;
+  const STAGE_SPEED_STEP = (FINAL_BALL_SPEED - BASE_BALL_SPEED) / (STAGE_COUNT - 1);
+  const MAX_BALL_TRAVEL_PER_STEP = 18;
   const MAX_LIVES = 3;
   const LIFE_LOSS_PAUSE = 0.9;
   const LEVEL_CLEAR_PAUSE = 5;
@@ -56,10 +68,34 @@
   const SHIELD_Y = HEIGHT - 28;
   const HIT_SOUND_LOOKAHEAD = 0.5;
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
+
+  function defaultProgress() {
+    return { unlockedStage: 0 };
+  }
+
+  function readProgress() {
+    try {
+      const value = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+      return {
+        unlockedStage: Math.max(0, Math.min(STAGE_COUNT - 1, Number(value?.unlockedStage) || 0))
+      };
+    } catch (_) {
+      return defaultProgress();
+    }
+  }
+
+  function saveProgress() {
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(state.progress));
+    } catch (_) {
+      // Storage may be unavailable in private or embedded browser contexts.
+    }
+  }
+
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const paddle = { x: WIDTH / 2, y: HEIGHT - 54, width: BASE_PADDLE_WIDTH, height: 16, speed: 660 };
-  const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: 500, hitSoundPrimedTarget: null };
+  const ball = { x: WIDTH / 2, y: HEIGHT - 88, radius: 10, vx: 210, vy: -420, speed: BASE_BALL_SPEED, hitSoundPrimedTarget: null };
   const state = {
     active: false,
     paused: false,
@@ -69,6 +105,10 @@
     best: Number(localStorage.getItem('brick-loop-best') || 0),
     lives: MAX_LIVES,
     level: 1,
+    selectedStage: 0,
+    stageIndex: 0,
+    runMode: 'run',
+    progress: readProgress(),
     lastTime: 0,
     pointerX: null,
     pointerInput: null,
@@ -84,7 +124,7 @@
   };
 
   const colors = ['#b8f36b', '#a590ff', '#74d8ff', '#ff8bc9', '#ffd166'];
-  // One pattern is selected for each level and the 30-pattern sequence repeats at level 31.
+  // Ten curated patterns are used once per stage. Later stages add denser layouts and fixed obstacles.
   const BRICK_PATTERNS = [
     // 01: full opening wall
     ['#######', '#######', '#######', '#######', '#######'],
@@ -104,48 +144,20 @@
     ['#.#.#.#', '.#.#.#.', '#.#.#.#', '.#.#.#.', '#.#.#.#', '.#.#.#.', '#.#.#.#'],
     // 09: vertical bars
     ['#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#', '#.#.#.#'],
-    // 10: horizontal bars
-    ['#######', '.......', '#######', '.......', '#######', '.......', '#######'],
-    // 11: heart
-    ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...', '.......'],
-    // 12: arrow up
-    ['...#...', '..###..', '.#####.', '#######', '...#...', '...#...', '...#...'],
-    // 13: arrow down
-    ['...#...', '...#...', '...#...', '#######', '.#####.', '..###..', '...#...'],
-    // 14: arrow left
-    ['...#...', '..##...', '.###...', '#######', '.###...', '..##...', '...#...'],
-    // 15: arrow right
-    ['...#...', '...##..', '...###.', '#######', '...###.', '...##..', '...#...'],
-    // 16: square ring
-    ['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######'],
-    // 17: diamond ring
-    ['...#...', '..#.#..', '.#...#.', '#.....#', '.#...#.', '..#.#..', '...#...'],
-    // 18: butterfly
-    ['#.....#', '###.###', '#######', '.#####.', '#######', '###.###', '#.....#'],
-    // 19: crown
-    ['#.#.#.#', '#######', '.#####.', '.#####.', '.#####.', '.#####.', '.......'],
-    // 20: spaceship
-    ['...#...', '..###..', '.#####.', '#######', '#######', '#.#.#.#', '.......'],
-    // 21: alien
-    ['.#...#.', '..###..', '#######', '.#####.', '.#.#.#.', '#.....#', '.......'],
-    // 22: skull
-    ['.#####.', '#######', '##.###.', '#######', '.#####.', '..###..', '.#...#.'],
-    // 23: lightning
-    ['....##.', '...###.', '..###..', '.#####.', '...###.', '..###..', '.##....'],
-    // 24: tree
-    ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '#######'],
-    // 25: house
-    ['...#...', '..###..', '.#####.', '#######', '#..#..#', '#..#..#', '#######'],
-    // 26: fish
-    ['.......', '..####.', '.######', '#######', '.######', '..####.', '.......'],
-    // 27: wave
-    ['##...##', '###.###', '.#####.', '..###..', '.#####.', '###.###', '##...##'],
-    // 28: maze
-    ['#######', '#...#.#', '#.#.#.#', '#.#...#', '#...#.#', '#.#.#.#', '#######'],
-    // 29: brackets
-    ['##...##', '##...##', '##...##', '#######', '##...##', '##...##', '##...##'],
-    // 30: target
+    // 10: target finale
     ['...#...', '..###..', '.#####.', '##.###.', '.#####.', '..###..', '...#...']
+  ];
+  const STAGE_CONFIGS = [
+    { name: 'OPENING WALL', pattern: BRICK_PATTERNS[0], obstacles: [] },
+    { name: 'DIAMOND FIELD', pattern: BRICK_PATTERNS[1], obstacles: [] },
+    { name: 'RISING PYRAMID', pattern: BRICK_PATTERNS[2], obstacles: [] },
+    { name: 'FALLING PYRAMID', pattern: BRICK_PATTERNS[3], obstacles: [] },
+    { name: 'CROSS CURRENT', pattern: BRICK_PATTERNS[4], obstacles: [] },
+    { name: 'HOURGLASS', pattern: BRICK_PATTERNS[5], obstacles: [] },
+    { name: 'BUTTERFLY ARRAY', pattern: ['#.....#', '###.###', '#######', '.#####.', '#######', '###.###', '#.....#'], obstacles: [] },
+    { name: 'CHECKER CORE', pattern: BRICK_PATTERNS[7], obstacles: [[2, 2], [2, 4], [4, 2], [4, 4]] },
+    { name: 'IRON MAZE', pattern: ['#######', '#...#.#', '#.#.#.#', '#.#...#', '#...#.#', '#.#.#.#', '#######'], obstacles: [[1, 0], [1, 4], [3, 2], [5, 2], [5, 4]] },
+    { name: 'FINAL TARGET', pattern: ['...#...', '..###..', '.#####.', '##.###.', '.#####.', '..###..', '...#...'], obstacles: [[1, 2], [1, 4], [3, 3], [5, 2], [5, 4]] }
   ];
   const itemTypes = [
     { key: 'wide', label: 'W', name: 'WIDE', color: '#b8f36b', duration: 10, weight: 30 },
@@ -395,6 +407,57 @@
     powerupsElement.classList.toggle('active', active.length > 0);
   }
 
+  function renderStageButtons() {
+    const selectableStage = Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
+    state.selectedStage = Math.max(0, Math.min(selectableStage, state.selectedStage));
+    stageGrid.innerHTML = '';
+    for (let index = 0; index < STAGE_COUNT; index += 1) {
+      const button = document.createElement('button');
+      const unlocked = index <= selectableStage;
+      button.type = 'button';
+      button.className = `stage-button${index === state.selectedStage ? ' selected' : ''}`;
+      button.dataset.stage = String(index);
+      button.disabled = !unlocked;
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-selected', String(index === state.selectedStage));
+      button.innerHTML = `<span>STAGE ${String(index + 1).padStart(2, '0')}</span><small class="status">${unlocked ? 'OPEN' : 'LOCK'}</small>`;
+      button.addEventListener('click', () => selectStage(index));
+      stageGrid.appendChild(button);
+    }
+    const config = STAGE_CONFIGS[state.selectedStage];
+    selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${config.name}`;
+    setupProgress.textContent = `OPEN ${Math.min(STAGE_COUNT, selectableStage + 1)}/${STAGE_COUNT} · PLAY ALL STAGES to unlock more`;
+    playSelectedButton.disabled = state.selectedStage > selectableStage;
+  }
+
+  function selectStage(index) {
+    const selectableStage = Math.max(0, Math.min(STAGE_COUNT - 1, state.progress.unlockedStage));
+    if (!Number.isInteger(index) || index < 0 || index > selectableStage) return;
+    state.selectedStage = index;
+    renderStageButtons();
+  }
+
+  function showSetup() {
+    state.active = false;
+    state.paused = false;
+    state.awaitingLaunch = false;
+    state.waiting = 0;
+    state.deathPause = 0;
+    state.victoryPause = 0;
+    state.pointerX = null;
+    state.pointerInput = null;
+    state.keys.left = false;
+    state.keys.right = false;
+    stopAllAudio();
+    setupOverlay.classList.remove('hidden');
+    overlay.classList.add('hidden');
+    pauseOverlay.hidden = true;
+    renderStageButtons();
+    updatePauseToggle();
+    updateLaunchPrompt();
+    draw();
+  }
+
   function makeBricks() {
     state.bricks = [];
     const columns = 7;
@@ -402,16 +465,10 @@
     const height = 28;
     const gap = 10;
     const startX = (WIDTH - (columns * width + (columns - 1) * gap)) / 2;
-    const pattern = BRICK_PATTERNS[(state.level - 1) % BRICK_PATTERNS.length];
-    const obstacleCells = [];
+    const config = STAGE_CONFIGS[Math.max(0, Math.min(STAGE_COUNT - 1, state.level - 1))];
+    const pattern = config.pattern;
     pattern.forEach((line, row) => {
       [...line].forEach((cell, column) => {
-        if (state.level > 10 && row > 0 && row < pattern.length - 1
-          && row >= Math.floor(pattern.length / 2) - 1
-          && row <= Math.floor(pattern.length / 2) + 1
-          && column >= 1 && column <= columns - 2) {
-          obstacleCells.push({ row, column });
-        }
         if (cell === '#') {
           state.bricks.push({
             x: startX + column * (width + gap),
@@ -420,44 +477,31 @@
             height,
             color: colors[(row + state.level - 1) % colors.length],
             alive: true,
-            indestructible: false
+            indestructible: false,
+            row,
+            column
           });
         }
       });
     });
-
-    if (state.level > 10) {
-      const obstacleCount = 2 + ((state.level - 11) % 4);
-      const middleCells = obstacleCells.sort((first, second) => {
-          const firstKey = (first.row * 17 + first.column * 31 + state.level * 13) % 97;
-          const secondKey = (second.row * 17 + second.column * 31 + state.level * 13) % 97;
-          return firstKey - secondKey;
-        });
-      for (const { row, column } of middleCells.slice(0, obstacleCount)) {
-        const obstacle = state.bricks.find((brick) => brick.x === startX + column * (width + gap)
-          && brick.y === 82 + row * (height + gap));
-        if (obstacle) {
-          obstacle.color = '#56627d';
-          obstacle.indestructible = true;
-        } else {
-          state.bricks.push({
-            x: startX + column * (width + gap),
-            y: 82 + row * (height + gap),
-            width,
-            height,
-            color: '#56627d',
-            alive: true,
-            indestructible: true
-          });
-        }
+    for (const [row, column] of config.obstacles) {
+      const obstacle = state.bricks.find((brick) => brick.row === row && brick.column === column);
+      if (obstacle) {
+        obstacle.color = '#56627d';
+        obstacle.indestructible = true;
       }
     }
+  }
+
+  function stageBallSpeed(stage = state.level) {
+    const stageNumber = Math.max(1, Math.min(STAGE_COUNT, Math.floor(Number(stage) || 1)));
+    return BASE_BALL_SPEED + (stageNumber - 1) * STAGE_SPEED_STEP;
   }
 
   function resetBall(targetBall = ball, waitingDuration = 0.8, awaitLaunch = false) {
     targetBall.x = paddle.x;
     targetBall.y = paddle.y - 34;
-    targetBall.speed = Math.min(BASE_BALL_SPEED + (state.level - 1) * LEVEL_SPEED_STEP, MAX_BALL_SPEED);
+    targetBall.speed = stageBallSpeed();
     const direction = Math.random() > 0.5 ? 1 : -1;
     targetBall.vx = direction * (170 + Math.random() * 70);
     targetBall.vy = -Math.sqrt(Math.max(targetBall.speed * targetBall.speed - targetBall.vx * targetBall.vx, 340 * 340));
@@ -475,12 +519,14 @@
     return true;
   }
 
-  function resetGame() {
+  function resetGame(startStage = 0, runMode = 'run') {
     state.paused = false;
     state.awaitingLaunch = false;
     state.score = 0;
     state.lives = MAX_LIVES;
-    state.level = 1;
+    state.stageIndex = Math.max(0, Math.min(STAGE_COUNT - 1, Math.floor(Number(startStage) || 0)));
+    state.level = state.stageIndex + 1;
+    state.runMode = runMode === 'selected' ? 'selected' : 'run';
     state.lastTime = 0;
     state.pointerX = null;
     state.pointerInput = null;
@@ -499,14 +545,15 @@
     updatePowerupStatus();
   }
 
-  function start() {
+  function start(startStage = 0, runMode = 'run') {
     if (state.active) return;
     stopAllAudio();
     warmSfx();
-    resetGame();
+    resetGame(startStage, runMode);
     state.active = true;
     updatePauseToggle();
     updateLaunchPrompt();
+    setupOverlay.classList.add('hidden');
     overlay.classList.add('hidden');
     emit('game-start');
     emitAnalytics('lumipaka_game_start');
@@ -534,9 +581,11 @@
     updatePowerupStatus();
     updatePauseToggle();
     updateLaunchPrompt();
+    setupOverlay.classList.add('hidden');
     overlayTitle.innerHTML = 'LOOP<br /><em>OVER</em>';
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점 · 레벨 ${state.level}<br />부서진 패턴을 다시 시작해보세요.`;
-    startButton.textContent = 'RESTART';
+    startButton.textContent = state.runMode === 'selected' ? 'REPLAY STAGE' : 'RESTART RUN';
+    stageSelectButton.hidden = false;
     overlay.classList.remove('hidden');
     emit('game-over', { score, level: state.level });
     emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: false });
@@ -546,7 +595,8 @@
 
   function nextLevel() {
     stopTrack(audioTracks.victory);
-    state.level += 1;
+    state.level = Math.min(STAGE_COUNT, state.level + 1);
+    state.stageIndex = state.level - 1;
     makeBricks();
     state.items = [];
     state.effects = { wide: 0, fire: 0, double: 0, shield: false };
@@ -561,13 +611,51 @@
   }
 
   function beginLevelClear() {
+    if (state.victoryPause > 0 || !state.active) return;
     state.victoryPause = LEVEL_CLEAR_PAUSE;
     state.waiting = 0;
     state.items = [];
     stopAllAudio();
     playTrack(audioTracks.victory);
+    if (state.runMode === 'run') {
+      const nextStage = Math.min(STAGE_COUNT - 1, state.level);
+      if (nextStage > state.progress.unlockedStage) {
+        state.progress.unlockedStage = nextStage;
+        saveProgress();
+      }
+      renderStageButtons();
+    }
     emit('level-clear', { level: state.level, score: Math.floor(state.score) });
     emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: true });
+  }
+
+  function finishLevelClear() {
+    state.active = false;
+    state.paused = false;
+    state.victoryPause = 0;
+    state.awaitingLaunch = false;
+    state.pointerX = null;
+    state.pointerInput = null;
+    stopAllAudio();
+    const score = Math.floor(state.score);
+    if (score > state.best) {
+      state.best = score;
+      localStorage.setItem('brick-loop-best', String(score));
+    }
+    updateHud();
+    updatePauseToggle();
+    updateLaunchPrompt();
+    setupOverlay.classList.add('hidden');
+    overlayTitle.innerHTML = state.runMode === 'run' ? 'ALL<br /><em>CLEAR</em>' : 'STAGE<br /><em>CLEAR</em>';
+    overlayCopy.innerHTML = state.runMode === 'run'
+      ? `10개 스테이지를 모두 돌파했습니다.<br />최종 기록 <strong>${score}</strong>점`
+      : `선택한 스테이지를 클리어했습니다.<br />기록 <strong>${score}</strong>점`;
+    startButton.textContent = state.runMode === 'run' ? 'RESTART RUN' : 'REPLAY STAGE';
+    stageSelectButton.hidden = false;
+    overlay.classList.remove('hidden');
+    emit('game-clear', { score, level: state.level, mode: state.runMode });
+    emitAnalytics('post_score', { score, level: state.level, character: 'player' });
+    emitAnalytics('lumipaka_game_end', { result: 'clear', score, level: state.level });
   }
 
   function circleIntersectsRect(circle, rect) {
@@ -667,7 +755,7 @@
   function addMultiBalls() {
     if (state.balls.length >= 3) return;
     const source = state.balls[0] || ball;
-    const speed = source.speed || 500;
+    const speed = source.speed || BASE_BALL_SPEED;
     const baseAngle = Math.atan2(source.vy || -1, source.vx || 0);
     const offsets = state.balls.length === 1 ? [-0.34, 0.34] : [0.42];
     for (const offset of offsets) {
@@ -760,7 +848,8 @@
     if (state.victoryPause > 0) {
       state.victoryPause = Math.max(0, state.victoryPause - delta);
       if (state.victoryPause === 0) {
-        nextLevel();
+        if (state.runMode === 'selected' || state.level >= STAGE_COUNT) finishLevelClear();
+        else nextLevel();
       }
       return;
     }
@@ -796,54 +885,64 @@
     const survivingBalls = [];
     let lastMissedBall = null;
     for (const currentBall of state.balls) {
-      primeApproachingHitSound(currentBall, paddleRect);
-      currentBall.x += currentBall.vx * delta;
-      currentBall.y += currentBall.vy * delta;
+      // High stage speeds use short travel steps so a ball cannot skip over a brick or paddle.
+      const stepCount = Math.max(1, Math.ceil((Math.hypot(currentBall.vx, currentBall.vy) * delta) / MAX_BALL_TRAVEL_PER_STEP));
+      const stepDelta = delta / stepCount;
+      let alive = true;
+      for (let step = 0; step < stepCount; step += 1) {
+        primeApproachingHitSound(currentBall, paddleRect);
+        currentBall.x += currentBall.vx * stepDelta;
+        currentBall.y += currentBall.vy * stepDelta;
 
-      if (currentBall.x - currentBall.radius <= 0 || currentBall.x + currentBall.radius >= WIDTH) {
-        currentBall.x = Math.max(currentBall.radius, Math.min(WIDTH - currentBall.radius, currentBall.x));
-        currentBall.vx *= -1;
-        currentBall.hitSoundPrimedTarget = null;
-      }
-      if (currentBall.y - currentBall.radius <= 0) {
-        currentBall.y = currentBall.radius;
-        currentBall.vy = Math.abs(currentBall.vy);
-      }
+        if (currentBall.x - currentBall.radius <= 0 || currentBall.x + currentBall.radius >= WIDTH) {
+          currentBall.x = Math.max(currentBall.radius, Math.min(WIDTH - currentBall.radius, currentBall.x));
+          currentBall.vx *= -1;
+          currentBall.hitSoundPrimedTarget = null;
+        }
+        if (currentBall.y - currentBall.radius <= 0) {
+          currentBall.y = currentBall.radius;
+          currentBall.vy = Math.abs(currentBall.vy);
+        }
 
-      if (currentBall.vy > 0 && circleIntersectsRect(currentBall, paddleRect)) {
-        currentBall.y = paddle.y - currentBall.radius;
-        const offset = (currentBall.x - paddle.x) / (paddle.width / 2);
-        currentBall.vx = Math.max(-currentBall.speed * 0.92, Math.min(currentBall.speed * 0.92, offset * currentBall.speed * 0.95));
-        currentBall.vy = -Math.sqrt(Math.max(currentBall.speed * currentBall.speed - currentBall.vx * currentBall.vx, 340 * 340));
-        playCollisionSfx(currentBall, 'paddle');
-      }
+        if (currentBall.vy > 0 && circleIntersectsRect(currentBall, paddleRect)) {
+          currentBall.y = paddle.y - currentBall.radius;
+          const offset = (currentBall.x - paddle.x) / (paddle.width / 2);
+          currentBall.vx = Math.max(-currentBall.speed * 0.92, Math.min(currentBall.speed * 0.92, offset * currentBall.speed * 0.95));
+          currentBall.vy = -Math.sqrt(Math.max(currentBall.speed * currentBall.speed - currentBall.vx * currentBall.vx, 340 * 340));
+          playCollisionSfx(currentBall, 'paddle');
+        }
 
-      for (const brick of state.bricks) {
-        if (!brick.alive || !circleIntersectsRect(currentBall, brick)) continue;
-        if (brick.indestructible) {
-          currentBall.vy *= -1;
+        for (const brick of state.bricks) {
+          if (!brick.alive || !circleIntersectsRect(currentBall, brick)) continue;
+          if (brick.indestructible) {
+            currentBall.vy *= -1;
+            playCollisionSfx(currentBall, brick);
+            break;
+          }
+          brick.alive = false;
+          state.score += 10 * state.level * (state.effects.double > 0 ? 2 : 1);
+          scoreElement.textContent = String(Math.floor(state.score));
+          maybeDropItem(brick);
+          if (state.effects.fire <= 0) currentBall.vy *= -1;
           playCollisionSfx(currentBall, brick);
           break;
         }
-        brick.alive = false;
-        state.score += 10 * state.level * (state.effects.double > 0 ? 2 : 1);
-        scoreElement.textContent = String(Math.floor(state.score));
-        maybeDropItem(brick);
-        if (state.effects.fire <= 0) currentBall.vy *= -1;
-        playCollisionSfx(currentBall, brick);
-        break;
-      }
 
-      if (currentBall.vy > 0 && state.effects.shield && currentBall.y + currentBall.radius >= SHIELD_Y) {
-        currentBall.y = SHIELD_Y - currentBall.radius;
-        currentBall.vy = -Math.abs(currentBall.vy);
-        state.effects.shield = false;
-        playCollisionSfx(currentBall, 'shield');
-        updatePowerupStatus();
-      }
+        if (currentBall.vy > 0 && state.effects.shield && currentBall.y + currentBall.radius >= SHIELD_Y) {
+          currentBall.y = SHIELD_Y - currentBall.radius;
+          currentBall.vy = -Math.abs(currentBall.vy);
+          state.effects.shield = false;
+          playCollisionSfx(currentBall, 'shield');
+          updatePowerupStatus();
+        }
 
-      if (currentBall.y - currentBall.radius <= HEIGHT) survivingBalls.push(currentBall);
-      else lastMissedBall = currentBall;
+        if (currentBall.y - currentBall.radius > HEIGHT) {
+          alive = false;
+          lastMissedBall = currentBall;
+          break;
+        }
+      }
+      if (alive) survivingBalls.push(currentBall);
     }
 
     state.balls = survivingBalls;
@@ -1007,7 +1106,13 @@
     if (shouldLaunch) launchBall();
   }
 
-  startButton.addEventListener('click', start);
+  playAllButton.addEventListener('click', () => start(0, 'run'));
+  playSelectedButton.addEventListener('click', () => start(state.selectedStage, 'selected'));
+  startButton.addEventListener('click', () => {
+    if (state.runMode === 'selected') start(state.stageIndex, 'selected');
+    else start(0, 'run');
+  });
+  stageSelectButton.addEventListener('click', showSetup);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
@@ -1082,6 +1187,7 @@
   });
 
   makeBricks();
+  renderStageButtons();
   updateHud();
   updateSoundToggle();
   updatePauseToggle();

@@ -53,8 +53,26 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; user-sel
 .launch-prompt[hidden] { display: none; }
 .launch-prompt strong { color: var(--lime); font-size: 14px; letter-spacing: .16em; }
 .launch-prompt span { font-size: 13px; font-weight: 700; line-height: 1.5; }
-.overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; padding: 25px; text-align: center; background: rgba(9,14,29,.78); }
+.overlay { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; justify-items: center; gap: 0; overflow: auto; padding: 25px; text-align: center; background: rgba(9,14,29,.78); }
 .overlay.hidden { display: none; }
+.setup-overlay { place-content: center; padding: 22px 18px; }
+.selection-heading { display: grid; gap: 5px; width: min(100%, 366px); margin-top: 12px; text-align: left; }
+.selection-heading span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
+.selection-heading strong { color: #f7f8ff; font-size: 13px; letter-spacing: .08em; }
+.stage-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 366px); margin-top: 7px; }
+.stage-button { display: grid; gap: 2px; min-width: 0; margin: 0; padding: 8px 3px 7px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.035); font-size: 8px; letter-spacing: .05em; line-height: 1.15; }
+.stage-button span { font-size: 8px; font-weight: 900; }
+.stage-button .status { color: inherit; font-size: 7px; letter-spacing: .08em; }
+.stage-button:hover, .stage-button.selected { border-color: var(--lime); color: #17210e; background: var(--lime); }
+.stage-button:disabled { cursor: default; opacity: .42; }
+.stage-button:disabled:hover { border-color: rgba(255,255,255,.1); color: var(--muted); background: rgba(255,255,255,.035); }
+.setup-progress { max-width: 366px; min-height: 24px; margin-top: 9px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.setup-actions { display: grid; gap: 6px; width: min(100%, 366px); margin-top: 4px; }
+.setup-actions button { width: 100%; margin-top: 0; }
+.secondary-button { border: 1px solid rgba(255,255,255,.14); color: #f7f8ff; background: rgba(255,255,255,.06); }
+.secondary-button:hover { color: #17210e; border-color: var(--lime); background: var(--lime); }
+.result-overlay { gap: 0; }
+.result-overlay .secondary-button { margin-top: 7px; }
 .pause-overlay { position: absolute; z-index: 2; inset: 0; display: grid; place-content: center; justify-items: center; gap: 16px; padding: 25px; text-align: center; background: rgba(9,14,29,.76); }
 .pause-overlay[hidden] { display: none; }
 .pause-title { color: var(--lime); font-size: clamp(34px, 10vw, 52px); font-weight: 900; letter-spacing: -.05em; line-height: 1; }
@@ -79,6 +97,13 @@ button:hover { background: #d0fb9c; }
   .level-value small { font-size: 9px; }
   .heart svg { width: 15px; height: 15px; }
   .overlay { padding: 10px; }
+  .setup-overlay { padding: 10px 8px; }
+  .selection-heading, .stage-grid, .setup-progress, .setup-actions { width: min(100%, 320px); }
+  .stage-grid { gap: 3px; }
+  .stage-button { padding: 7px 2px 6px; border-radius: 8px; font-size: 7px; }
+  .stage-button span { font-size: 7px; }
+  .stage-button .status { font-size: 6px; }
+  .setup-progress { margin-top: 6px; font-size: 8px; }
   .launch-prompt { bottom: 14%; padding: 8px 10px; }
   .launch-prompt strong { font-size: 12px; }
   .launch-prompt span { font-size: 11px; }
@@ -92,6 +117,8 @@ button:hover { background: #d0fb9c; }
   .game-shell { padding: 8px 6px; }
   .hud { padding-bottom: 8px; }
   .overlay { padding: 6px; }
+  .setup-overlay { padding: 6px 4px; }
+  .selection-heading, .stage-grid, .setup-progress, .setup-actions { width: min(100%, 280px); }
   .eyebrow { display: none; }
   h1 { margin: 4px 0 5px; font-size: 28px; }
   .overlay p { font-size: 10px; line-height: 1.2; }
