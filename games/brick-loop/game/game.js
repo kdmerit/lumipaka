@@ -57,9 +57,8 @@
   const CURRENT_BALL_SPEED = 500;
   const PREVIOUS_BASE_BALL_SPEED = CURRENT_BALL_SPEED * 1.5;
   const BASE_BALL_SPEED = PREVIOUS_BASE_BALL_SPEED * 0.8;
-  const PREVIOUS_FINAL_BALL_SPEED = BASE_BALL_SPEED * 3;
-  // Stage 01 stays at 600. Stage 10 is 0.7x the former 1,800 top speed (1,260).
-  const FINAL_BALL_SPEED = PREVIOUS_FINAL_BALL_SPEED * 0.7;
+  // Stage 01 stays at 600 and Stage 10 is fixed at 1,500; the nine intervals are equal.
+  const FINAL_BALL_SPEED = 1500;
   const STAGE_SPEED_STEP = (FINAL_BALL_SPEED - BASE_BALL_SPEED) / (STAGE_COUNT - 1);
   const MAX_BALL_TRAVEL_PER_STEP = 18;
   const MAX_LIVES = 3;
