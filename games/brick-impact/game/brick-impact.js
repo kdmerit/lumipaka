@@ -29,9 +29,9 @@
   const launchPrompt = document.querySelector('#launch-prompt');
 
   const audioTracks = {
-    death: new Audio('./audio/brick-loop-death.wav'),
-    victory: new Audio('./audio/brick-loop-victory.wav'),
-    gameOver: new Audio('./audio/brick-loop-game-over.wav')
+    death: new Audio('./audio/brick-impact-death.wav'),
+    victory: new Audio('./audio/brick-impact-victory.wav'),
+    gameOver: new Audio('./audio/brick-impact-game-over.wav')
   };
   audioTracks.death.volume = 0.2;
   audioTracks.victory.volume = 0.26;
@@ -39,8 +39,8 @@
   Object.values(audioTracks).forEach((track) => { track.preload = 'auto'; });
 
   const sfxDefinitions = {
-    hit: { url: './audio/brick-hit.wav', volume: 0.18 },
-    pickup: { url: './audio/item-pickup.wav', volume: 0.2 }
+    hit: { url: './audio/brick-impact-hit.wav', volume: 0.18 },
+    pickup: { url: './audio/brick-impact-item-pickup.wav', volume: 0.2 }
   };
   let sfxContext = null;
   const sfxRawData = new Map();
@@ -52,13 +52,13 @@
   const WIDTH = 720;
   const HEIGHT = 960;
   const STAGE_COUNT = 10;
-  const PROGRESS_KEY = 'brick-loop-progress-v1';
+  const PROGRESS_KEY = 'brick-impact-progress-v1';
   const BASE_PADDLE_WIDTH = 150;
   const CURRENT_BALL_SPEED = 500;
   const PREVIOUS_BASE_BALL_SPEED = CURRENT_BALL_SPEED * 1.5;
   const BASE_BALL_SPEED = PREVIOUS_BASE_BALL_SPEED * 0.8;
-  // Stage 01 stays at 600 and Stage 10 is fixed at 1,500; the nine intervals are equal.
-  const FINAL_BALL_SPEED = 1500;
+  // Stage 01 stays at 600 and Stage 10 is fixed at 1,800; the nine intervals are equal.
+  const FINAL_BALL_SPEED = 1800;
   const STAGE_SPEED_STEP = (FINAL_BALL_SPEED - BASE_BALL_SPEED) / (STAGE_COUNT - 1);
   const MAX_BALL_TRAVEL_PER_STEP = 18;
   const MAX_LIVES = 3;
@@ -103,7 +103,7 @@
     waiting: 0,
     awaitingLaunch: false,
     score: 0,
-    best: Number(localStorage.getItem('brick-loop-best') || 0),
+    best: Number(localStorage.getItem('brick-impact-best') || 0),
     lives: MAX_LIVES,
     level: 1,
     selectedStage: 0,
@@ -115,7 +115,7 @@
     lastTime: 0,
     pointerX: null,
     pointerInput: null,
-    soundEnabled: localStorage.getItem('brick-loop-sound') !== 'off',
+    soundEnabled: localStorage.getItem('brick-impact-sound') !== 'off',
     keys: { left: false, right: false },
     bricks: [],
     items: [],
@@ -359,7 +359,7 @@
     } else {
       state.lastTime = 0;
       resumeGameAudio();
-      requestAnimationFrame(loop);
+      requestAnimationFrame(gameLoop);
     }
     updatePauseToggle();
     updateLaunchPrompt();
@@ -369,7 +369,7 @@
 
   function setSoundEnabled(enabled) {
     state.soundEnabled = enabled;
-    localStorage.setItem('brick-loop-sound', enabled ? 'on' : 'off');
+    localStorage.setItem('brick-impact-sound', enabled ? 'on' : 'off');
     updateSoundToggle();
     if (!enabled) {
       sfxOutputWarmed = false;
@@ -597,8 +597,8 @@
     overlay.classList.add('hidden');
     emit('game-start');
     emitAnalytics('lumipaka_game_start');
-    emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
-    requestAnimationFrame(loop);
+    emitAnalytics('level_start', { level_name: `BRICK IMPACT ${state.level}` });
+    requestAnimationFrame(gameLoop);
   }
 
   function gameOver() {
@@ -611,7 +611,7 @@
     const score = Math.floor(state.score);
     if (!state.testMode && score > state.best) {
       state.best = score;
-      localStorage.setItem('brick-loop-best', String(score));
+      localStorage.setItem('brick-impact-best', String(score));
     }
     updateHud();
     state.items = [];
@@ -622,13 +622,13 @@
     updatePauseToggle();
     updateLaunchPrompt();
     setupOverlay.classList.add('hidden');
-    overlayTitle.innerHTML = 'LOOP<br /><em>OVER</em>';
+    overlayTitle.innerHTML = 'GAME<br /><em>OVER</em>';
     overlayCopy.innerHTML = `기록 <strong>${score}</strong>점 · 레벨 ${state.level}<br />부서진 패턴을 다시 시작해보세요.`;
     startButton.textContent = state.runMode === 'selected' ? 'REPLAY STAGE' : 'RESTART RUN';
     stageSelectButton.hidden = false;
     overlay.classList.remove('hidden');
     emit('game-over', { score, level: state.level });
-    emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: false });
+    emitAnalytics('level_end', { level_name: `BRICK IMPACT ${state.level}`, success: false });
     if (!state.testMode) emitAnalytics('post_score', { score, level: state.level, character: 'player' });
     emitAnalytics('lumipaka_game_end', { result: 'game_over', score, level: state.level });
   }
@@ -647,7 +647,7 @@
     resetBall(ball, 0.8, true);
     updateHud();
     updatePowerupStatus();
-    emitAnalytics('level_start', { level_name: `LOOP ${state.level}` });
+    emitAnalytics('level_start', { level_name: `BRICK IMPACT ${state.level}` });
   }
 
   function beginLevelClear() {
@@ -666,7 +666,7 @@
       renderStageButtons();
     }
     emit('level-clear', { level: state.level, score: Math.floor(state.score) });
-    emitAnalytics('level_end', { level_name: `LOOP ${state.level}`, success: true });
+    emitAnalytics('level_end', { level_name: `BRICK IMPACT ${state.level}`, success: true });
   }
 
   function finishLevelClear() {
@@ -680,7 +680,7 @@
     const score = Math.floor(state.score);
     if (!state.testMode && score > state.best) {
       state.best = score;
-      localStorage.setItem('brick-loop-best', String(score));
+      localStorage.setItem('brick-impact-best', String(score));
     }
     updateHud();
     updatePauseToggle();
@@ -1120,13 +1120,13 @@
 
   }
 
-  function loop(time) {
+  function gameLoop(time) {
     if (!state.active || state.paused) return;
     const delta = state.lastTime ? Math.min((time - state.lastTime) / 1000, 0.04) : 0.016;
     state.lastTime = time;
     update(delta);
     draw();
-    if (state.active && !state.paused) requestAnimationFrame(loop);
+    if (state.active && !state.paused) requestAnimationFrame(gameLoop);
   }
 
   function setPointer(event) {

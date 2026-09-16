@@ -125,7 +125,7 @@ function renderHome(catalog) {
     <section class="hero">
       <div>
         <div class="eyebrow">WELCOME TO LUMIPAKA</div>
-        <h1>잠깐의 틈을<br /><em>플레이 타임</em>으로.</h1>
+        <h1>바로 한 판 즐기는<br /><em>게임공간</em></h1>
         <p>설치 없이 브라우저에서 바로 시작하는 짧고 선명한 게임들.</p>
       </div>
       <div class="hero-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
