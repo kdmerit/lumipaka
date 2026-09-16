@@ -15,6 +15,7 @@
   const PLAYER_REAR_Y = HEIGHT - 112;
   const PLAYER_FORWARD_Y = HEIGHT / 2;
   const PICKUP_SPEEDS = { shield: 440, bomb: 400, missile: 360, spread: 320, split: 280, score: 240 };
+  const ENEMY_VISUAL_SCALE = 1.2;
   const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3 12C-3 5 6-2 12 5 18-2 27 5 21 12Z"/></svg>';
   const BOMB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="15" r="7" fill="currentColor"/><path d="m14 9 3-3c-2-4 2-5 3-3M19 1v2m2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   const MODULES = ['split', 'missile', 'spread'];
@@ -1876,6 +1877,7 @@
     context.save();
     context.translate(enemy.x, enemy.y);
     context.rotate(Math.sin(enemy.age * 2 + enemy.phase) * .08);
+    context.scale(ENEMY_VISUAL_SCALE, ENEMY_VISUAL_SCALE);
     if (skins.draw(context, `enemy-${enemy.skinId}`, 0, 0, enemy.radius * 2.5, enemy.radius * 2.5)) { context.restore(); return; }
     context.fillStyle = enemy.color;
     context.shadowColor = enemy.color;
