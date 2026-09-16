@@ -26,7 +26,11 @@
     subBolt: './audio-samples/low-03-sub-bolt.wav',
     bassPlasma: './audio-samples/low-01-bass-plasma.wav',
     itemGet: './audio-samples/item_get2.wav', bombExplosion: './audio-samples/bomb_explosion.wav',
-    victory: './audio-samples/victory-01-serene-spark.wav'
+    victory: './audio-samples/victory-01-serene-spark.wav',
+    laserPrepare: './audio-samples/laser_prepare_3s.wav',
+    beamFireExplosion: './audio-samples/beam_fire_explosion.wav',
+    laserSpark: './audio-samples/laser_spark.wav',
+    gunFire: './audio-samples/gun_fire.wav'
   };
   const skins = window.StellarSkins;
   const SKIN_VARIANTS = { scout: [1, 3], zigzag: [7], shooter: [2, 6], charger: [5], turret: [4, 8], orbiter: [9] };
@@ -410,10 +414,18 @@
 
   function playGameSample(name, gainValue = .18) {
     const audioContext = ensureAudio(); const buffer = audio.samples.get(name);
-    if (!audioContext || !buffer) return;
+    if (!audioContext || !buffer) return null;
     const source = audioContext.createBufferSource(); const gain = audioContext.createGain();
     source.buffer = buffer; gain.gain.value = gainValue;
     source.connect(gain).connect(audio.compressor || audioContext.destination); source.start();
+    return source;
+  }
+
+  function stopBossSkillAudio(action) {
+    const source = action?.audioSource;
+    if (!source) return;
+    action.audioSource = null;
+    try { source.stop(); } catch { /* The source may have ended naturally. */ }
   }
 
   function playTone(type) {
@@ -515,6 +527,7 @@
     state.pickups.length = 0;
     state.hazards.length = 0;
     state.particles.length = 0;
+    stopBossSkillAudio(state.boss?.action);
     state.boss = null;
     state.bossDash = null;
   }
@@ -1011,7 +1024,11 @@
   function clearBombThreats() {
     if (!state.bombEffect || state.stagePhase === 'boss-clear') return;
     if (state.boss) {
-      if (state.boss.action) { state.boss.y = state.boss.action.fromY; state.boss.action = null; }
+      if (state.boss.action) {
+        stopBossSkillAudio(state.boss.action);
+        state.boss.y = state.boss.action.fromY;
+        state.boss.action = null;
+      }
       state.boss.rapidFire = null;
     }
     state.enemyBullets.length = 0;
@@ -1249,7 +1266,8 @@
     }
     if (boss.action) return;
     state.bossDash = null;
-    boss.action = { type: pattern, elapsed: 0, fromX: boss.x, fromY: boss.y, x: state.playerX, y: state.playerY, hit: false, nextShot: 0 };
+    boss.action = { type: pattern, elapsed: 0, fromX: boss.x, fromY: boss.y, x: state.playerX, y: state.playerY, hit: false, nextShot: 0, audioSource: null, beamAudioPlayed: false, stormAudioPlayed: false };
+    if (pattern === 'laser-cannon') boss.action.audioSource = playGameSample('laserPrepare', .16);
   }
 
   function updateBossSkill(dt) {
@@ -1259,6 +1277,7 @@
       rapid.elapsed += dt;
       while (rapid.nextShot < Math.min(rapid.elapsed, 3)) {
         fireSkillBullet(boss.x, boss.y + 40, 2);
+        playGameSample('gunFire', .07);
         rapid.nextShot += .16;
       }
       if (rapid.elapsed >= 3) boss.rapidFire = null;
@@ -1285,12 +1304,14 @@
       if (previous < 3) {
         action.x = state.playerX; action.y = state.playerY;
       }
-      if (previous < 3 && t >= 3) {
+      if (previous < 3 && t >= 3 && !action.beamAudioPlayed) {
         const x = boss.x, y = boss.y + 40;
         const angle = Math.atan2(action.y - y, action.x - x);
         const dx = Math.cos(angle), dy = Math.sin(angle);
         const distances = [dx > 0 ? (WIDTH - x) / dx : dx < 0 ? -x / dx : Infinity, dy > 0 ? (HEIGHT - y) / dy : dy < 0 ? -y / dy : Infinity];
         state.hazards.push({ type: 'energy-cannon', x, y, dx, dy, length: Math.min(...distances.filter(d => d >= 0)), elapsed: 0, life: .75, hit: false, width: 80 });
+        playGameSample('beamFireExplosion', .24);
+        action.beamAudioPlayed = true;
       }
       if (t >= 3.75) boss.action = null;
     } else if (action.type === 'fin-panel') {
@@ -1304,6 +1325,10 @@
       if (t >= 6.4) boss.action = null;
     } else if (action.type === 'psionic-storm') {
       // The warning and damaging circle share the position captured at cast time.
+      if (previous < 2 && t >= 2 && !action.stormAudioPlayed) {
+        playGameSample('laserSpark', .12);
+        action.stormAudioPlayed = true;
+      }
       if (t >= 2 && t < 3.6 && !action.hit && Math.hypot(state.playerX - action.x, state.playerY - action.y) <= 180 + SHIP.hitRadius) action.hit = applySkillHit();
       if (t >= 3.6) boss.action = null;
     }
@@ -1379,6 +1404,7 @@
     state.stageScore += 2500 + state.stageIndex * 450;
     spawnParticle(boss.x, boss.y, currentStage().boss.color, 60, 300);
     state.hazards.length = 0;
+    stopBossSkillAudio(boss.action);
     state.boss = null; state.bombProjectile = null; state.bombEffect = { elapsed: 0, bursts: Array.from({ length: 9 }, (_, i) => ({ x: boss.x + ((i % 3) - 1) * 90, y: boss.y + (Math.floor(i / 3) - 1) * 85, start: i * .13, size: 260 })) };
     state.pendingStageClear = true; state.stagePhase = 'boss-clear'; playGameSample('bombExplosion', .24);
   }

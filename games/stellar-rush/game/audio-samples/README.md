@@ -12,7 +12,18 @@
 
 신규 효과음 원본은 Google Drive의 `codex/sound` 폴더에서 관리합니다. 사용자가 WAV 파일명을 지정하면 이 폴더에서 해당 파일을 먼저 확인하며, 적용을 지시받은 경우에만 이 디렉터리로 복사해 게임의 상대 경로 자산으로 사용합니다.
 
-적용 효과음: `item_get2.wav`(모든 아이템 획득), `bomb_explosion.wav`(폭탄·보스 폭발), `victory-01-serene-spark.wav`(스테이지 클리어).
+적용 효과음: `item_get2.wav`(모든 아이템 획득), `bomb_explosion.wav`(폭탄·보스 폭발), `victory-01-serene-spark.wav`(스테이지 클리어), 아래 보스 스킬 샘플.
+
+## 보스 스킬 효과음
+
+| 게임 자산 | Drive 원본 | 재생 시점 | gain |
+| --- | --- | --- | ---: |
+| `laser_prepare_3s.wav` | `LASER-PREPARE.wav`를 3초로 시간축 확장한 변환본 | 레이저포 충전 시작부터 3초 | 0.16 |
+| `beam_fire_explosion.wav` | `BEAM-FIRE-EXPLOSION.wav` | 레이저포 발사 순간 1회 | 0.24 |
+| `laser_spark.wav` | `LASERGUN-SPARK.wav` | 사이오닉 스톰 활성화 순간 1회 | 0.12 |
+| `gun_fire.wav` | `GUN-FIRE.wav` | 속사포 탄환 한 발 생성마다 1회 | 0.07 |
+
+속사포 샘플은 0.16초 발사 간격에 맞춰 중첩 재생하며 별도 디바운스나 발사 억제를 적용하지 않는다. 레이저 충전이 폭탄 등으로 취소되면 충전 샘플을 정리하고 빔 발사음은 재생하지 않는다. 원본 WAV는 Google Drive `codex/sound`에 보존하고 게임에는 상대 경로 복사본만 포함한다.
 
 아군 전투기 기본 발사음 후보는 아래 두 파일만 유지합니다. 현재 게임에는 아직 연결하지 않았습니다.
 
