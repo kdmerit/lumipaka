@@ -23,8 +23,9 @@ body { display: grid; place-items: center; overflow: hidden; color: #f7f8ff; bac
 .hud .best-wrap { align-items: end; }
 .label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
 .hud strong { color: var(--lime); font-size: 25px; line-height: 1; }
-.game-tools { display: flex; justify-content: flex-end; gap: 8px; margin: -4px 5px 8px; }
+.game-tools { display: flex; justify-content: center; gap: 8px; margin-top: 9px; }
 .sound-toggle, .pause-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
+.pause-toggle { width: 110px; }
 .sound-toggle:hover, .pause-toggle:hover, .pause-toggle[aria-pressed="true"] { color: #17210e; background: var(--lime); }
 .sound-toggle[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .sound-toggle[aria-pressed="false"]:hover { color: #f7f8ff; background: rgba(255,255,255,.08); }

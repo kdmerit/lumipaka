@@ -25,11 +25,12 @@ body { display: grid; place-items: center; overflow-x: hidden; color: #f7f8ff; b
 .hud strong { color: var(--lime); font-size: 25px; line-height: 1; }
 .center-title { color: #f7f8ff; font-size: 12px; font-weight: 900; letter-spacing: .16em; }
 .center-title em { color: var(--lime); font-style: normal; }
-.game-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 8px; }
+.game-tools { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 9px; }
 .tool-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
-.powerup-status { min-width: 0; overflow: hidden; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
+.powerup-status { min-width: 0; margin: -4px 5px 8px; overflow: hidden; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
 .powerup-status.active { color: var(--lime); }
 .sound-toggle, .pause-toggle { margin: 0; padding: 7px 10px; border: 1px solid rgba(184,243,107,.3); border-radius: 999px; color: var(--lime); background: rgba(184,243,107,.08); font-size: 9px; letter-spacing: .12em; }
+.pause-toggle { width: 110px; }
 .sound-toggle:hover, .pause-toggle:hover { color: #17210e; background: var(--lime); }
 .sound-toggle[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .sound-toggle[aria-pressed="false"]:hover { color: #f7f8ff; background: rgba(255,255,255,.08); }
@@ -59,7 +60,8 @@ button:hover { background: #d0fb9c; }
 @media (max-width: 560px) {
   .game-shell { padding: 12px 8px; }
   .hud { gap: 8px; }
-  .game-tools { margin-top: -2px; }
+  .powerup-status { margin-top: -2px; }
+  .game-tools { margin-top: 9px; }
   .powerup-status { font-size: 8px; letter-spacing: .06em; }
   .center-title { font-size: 10px; }
   .hud strong { font-size: 21px; }

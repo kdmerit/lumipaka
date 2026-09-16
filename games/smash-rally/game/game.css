@@ -66,6 +66,7 @@ button { font: inherit; }
   font-weight: 800;
   letter-spacing: .1em;
 }
+.pause-toggle { width: 104px; }
 .serve-toggle:not(:disabled), .sound-toggle:hover, .pause-toggle:not(:disabled):hover {
   color: var(--ink);
   background: var(--lime);
@@ -166,6 +167,7 @@ h1 em { color: var(--lime); font-style: normal; }
   .game-tools { margin-top: 8px; }
   .tool-actions { gap: 4px; }
   .sound-toggle, .pause-toggle, .serve-toggle { padding: 6px 7px; font-size: 8px; }
+  .pause-toggle { width: 90px; }
   .overlay { padding: 16px 12px; }
   .eyebrow { font-size: 8px; }
   h1 { margin: 8px 0; font-size: clamp(34px, 12vw, 50px); }
