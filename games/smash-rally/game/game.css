@@ -157,6 +157,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .pause-overlay .primary-button { margin-top: 0; }
 .pause-exit-button { min-width: 182px; padding: 13px 24px; color: var(--white); background: rgba(255,255,255,.055); font-size: 12px; }
 .pause-exit-button:hover { color: var(--lime-soft); background: rgba(255,255,255,.1); }
+.pause-overlay .primary-button, .pause-overlay .pause-exit-button { width: 182px; }
 .pause-copy { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
 .hint { margin: 12px 0 0; color: var(--muted); text-align: center; font-size: 10px; line-height: 1.5; }
 
@@ -183,6 +184,8 @@ h1 em { color: var(--lime); font-style: normal; }
   .result-set-score { font-size: 13px; }
   .result-game-score { font-size: 28px; }
   .secondary-button { min-width: 115px; padding: 10px 14px; font-size: 9px; }
+  .pause-overlay .primary-button, .pause-overlay .pause-exit-button { width: 156px; }
+  .pause-exit-button { padding: 11px 18px; font-size: 10px; }
 }
 
 @media (max-width: 330px) {
