@@ -38,6 +38,8 @@
   const skinCounts = {};
   const BOSS_SKILLS = ['ram', 'shield', 'laser-cannon', 'fin-panel', 'rapid-fire', 'psionic-storm', 'charger-summon'];
   const SKILL_LABELS = { ram: 'BODY RAM', shield: 'SHIELD', 'laser-cannon': 'LASER CANNON', 'fin-panel': 'FIN PANEL', 'rapid-fire': 'RAPID FIRE', 'psionic-storm': 'PSIONIC STORM', 'charger-summon': 'CHARGER SUMMON' };
+  const FIN_PANEL_OFFSETS = [-240, -150, 150, 240];
+  const FIN_PANEL_HITBOX = { width: 34, height: 86 };
   let assetsReady = false;
   const SHIP = { width: 34, height: 48, speed: 520, hitRadius: 11 };
 
@@ -901,6 +903,41 @@
     if (enemy.hp <= 0 && !enemy.dead) destroyEnemy(enemy);
   }
 
+  function finPanelSpread(action) {
+    if (!action) return 0;
+    const deploy = Math.min(1, Math.max(0, (action.elapsed - .5) / .5));
+    const retract = Math.min(1, Math.max(0, (6.4 - action.elapsed) / .4));
+    return deploy * retract;
+  }
+
+  function finPanelPosition(action, panel) {
+    const boss = state.boss;
+    if (!boss || !action || !panel) return null;
+    return { x: boss.x + panel.offset * finPanelSpread(action), y: boss.y + 40 };
+  }
+
+  function finPanelRect(action, panel) {
+    const position = finPanelPosition(action, panel);
+    if (!position) return null;
+    return { x: position.x, y: position.y, ...FIN_PANEL_HITBOX };
+  }
+
+  function finPanelDurability() {
+    return Math.ceil(ENEMY_STATS.scout.hp * (1 + mobStageIndex() * .08));
+  }
+
+  function damageFinPanel(action, panel, amount) {
+    if (!action || !panel || panel.dead) return;
+    panel.hp -= amount;
+    const position = finPanelPosition(action, panel);
+    if (position) spawnParticle(position.x, position.y, '#46d8ff', 1, 70);
+    if (panel.hp <= 0) {
+      panel.dead = true;
+      if (position) spawnParticle(position.x, position.y, '#46d8ff', 12, 180);
+      playGameSample('enemyDestroy', .10);
+    }
+  }
+
   function destroyEnemy(enemy) {
     enemy.dead = true;
     state.score += enemy.score;
@@ -1282,7 +1319,7 @@
     }
     if (boss.action) return;
     state.bossDash = null;
-    boss.action = { type: pattern, elapsed: 0, fromX: boss.x, fromY: boss.y, x: state.playerX, y: state.playerY, hit: false, nextShot: 0, audioSource: null, beamAudioPlayed: false, stormAudioPlayed: false };
+    boss.action = { type: pattern, elapsed: 0, fromX: boss.x, fromY: boss.y, x: state.playerX, y: state.playerY, hit: false, nextShot: 0, audioSource: null, beamAudioPlayed: false, stormAudioPlayed: false, panels: pattern === 'fin-panel' ? FIN_PANEL_OFFSETS.map(offset => ({ offset, hp: finPanelDurability(), maxHp: finPanelDurability(), dead: false })) : null };
     if (pattern === 'laser-cannon') boss.action.audioSource = playGameSample('laserPrepare', .16);
   }
 
@@ -1332,9 +1369,17 @@
       if (t >= 3.75) boss.action = null;
     } else if (action.type === 'fin-panel') {
       boss.x = lerp(action.fromX, WIDTH / 2, Math.min(1, t / .5));
+      const activePanels = (action.panels || []).filter(panel => !panel.dead);
+      if (!activePanels.length) {
+        boss.action = null;
+        return true;
+      }
       if (t > 1) {
         while (action.nextShot < Math.min(t - 1, 5)) {
-          for (const offset of [-240, -150, 150, 240]) fireSkillBullet(boss.x + offset, boss.y + 40, 1.5);
+          for (const panel of activePanels) {
+            const position = finPanelPosition(action, panel);
+            if (position) fireSkillBullet(position.x, position.y, 1.5);
+          }
           action.nextShot += .25;
         }
       }
@@ -1694,6 +1739,15 @@
         consumed = true;
         break;
       }
+      if (!consumed && boss?.action?.type === 'fin-panel') {
+        for (const panel of boss.action.panels || []) {
+          const panelRect = !panel.dead ? finPanelRect(boss.action, panel) : null;
+          if (!panelRect || !circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, panelRect)) continue;
+          damageFinPanel(boss.action, panel, bullet.damage);
+          consumed = true;
+          break;
+        }
+      }
       const shieldContact = boss && boss.shieldHp > 0 && Math.hypot((bullet.x - boss.x) / ((state.stageIndex === 9 ? 210 : 110) + bullet.radius), (bullet.y - boss.y) / ((state.stageIndex === 9 ? 165 : 105) + bullet.radius)) <= 1;
       if (!consumed && boss && (shieldContact || circleRectCollision({ x: bullet.x, y: bullet.y, radius: bullet.radius }, bossRect()))) {
         damageBoss(bullet.damage);
@@ -2043,12 +2097,19 @@
         context.fillStyle = gradient; context.beginPath(); context.arc(boss.x, boss.y + 40, r, 0, Math.PI * 2); context.fill();
         context.strokeStyle = 'rgba(90,195,255,.55)'; context.setLineDash([12, 12]); context.beginPath(); context.moveTo(boss.x, boss.y + 40); context.lineTo(a.x, a.y); context.stroke(); context.setLineDash([]);
       } else if (a.type === 'fin-panel') {
-        const spread = Math.min(1, Math.max(0, (a.elapsed - .5) / .5)) * Math.min(1, Math.max(0, (6.4 - a.elapsed) / .4));
-        for (const offset of [-240, -150, 150, 240]) {
-          context.save(); context.translate(boss.x + offset * spread, boss.y + 40);
+        for (const panel of a.panels || []) {
+          if (panel.dead) continue;
+          const position = finPanelPosition(a, panel);
+          if (!position) continue;
+          context.save(); context.translate(position.x, position.y);
           context.fillStyle = '#ced8ef'; context.strokeStyle = '#46d8ff'; context.lineWidth = 3;
           context.beginPath(); context.moveTo(-11, -35); context.lineTo(11, -27); context.lineTo(9, 32); context.lineTo(0, 45); context.lineTo(-9, 32); context.closePath(); context.fill(); context.stroke();
           context.fillStyle = '#38cfff'; context.fillRect(-4, 5, 8, 28); context.restore();
+          context.save();
+          context.translate(position.x, position.y - 52);
+          context.fillStyle = 'rgba(0,0,0,.55)'; context.fillRect(-16, -3, 32, 5);
+          context.fillStyle = '#72e7ff'; context.fillRect(-16, -3, 32 * clamp(panel.hp / panel.maxHp, 0, 1), 5);
+          context.restore();
         }
       } else if (a.type === 'psionic-storm') {
         drawStorm(a);
