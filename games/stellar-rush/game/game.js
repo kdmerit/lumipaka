@@ -9,6 +9,8 @@
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 2;
   const MAX_PICKUP_BONUS = 200;
+  const RESTART_LIVES = 2;
+  const RESTART_BOMBS = 2;
   const PICKUP_DROP_RATE = .1275;
   const TURRET_PICKUP_DROP_RATE = .14875;
   const MOB_BULLET_COLOR = '#FF781F';
@@ -249,8 +251,6 @@
     transitionTimer: 0,
     stageScoreStart: 0,
     stageScore: 0,
-    stageLivesStart: 3,
-    stageBombsStart: 2,
     score: 0,
     lives: 3,
     bombs: 2,
@@ -475,9 +475,9 @@
   function updateProgressForStage() {
     const index = state.stageIndex;
     const medal = stageMedal();
-    // Only the continuous run starting at stage one can unlock the next stage.
-    if (state.runMode === 'run') state.progress.unlockedStage = Math.max(state.progress.unlockedStage, Math.min(STAGE_COUNT - 1, index + 1));
     if (state.cheatMode !== 'none') { saveProgress(); return; }
+    // A normal clear from either full-run or selected-stage play unlocks the next stage.
+    state.progress.unlockedStage = Math.max(state.progress.unlockedStage, Math.min(STAGE_COUNT - 1, index + 1));
     if (medalRank(medal) > medalRank(state.progress.medals[index])) state.progress.medals[index] = medal;
     state.progress.stageScores[index] = Math.max(state.progress.stageScores[index] || 0, state.stageScore);
     saveProgress();
@@ -509,7 +509,7 @@
     }
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${STAGES[state.selectedStage].name}`;
     practiceButton.disabled = !assetsReady || state.selectedStage > selectableStage;
-    setupProgress.textContent = `OPEN ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · PLAY ALL STAGES to unlock more`;
+    setupProgress.textContent = `OPEN ${Math.min(STAGE_COUNT, state.progress.unlockedStage + 1)}/${STAGE_COUNT} · BEST RUN ${formatScore(state.progress.bestRunScore)} · CLEAR STAGES TO UNLOCK MORE`;
   }
 
   function selectStage(index) {
@@ -571,10 +571,6 @@
     state.transitionTimer = 0;
     state.stageScoreStart = state.score;
     state.stageScore = 0;
-    // Lives and bombs carried into a paused-stage restart are snapshotted.
-    // Equipment is reset so the stage can be replayed from its basic loadout.
-    state.stageLivesStart = state.lives;
-    state.stageBombsStart = state.bombs;
     state.playerX = WIDTH / 2;
     state.playerY = PLAYER_REAR_Y;
     state.pointerTargetX = state.playerX;
@@ -597,7 +593,13 @@
     stageTitle.textContent = currentStage().name;
     stageMedalElement.textContent = stageMedalValue();
     state.lives = Math.min(3, state.lives + 1);
-    stageCopy.textContent = state.runMode === 'practice' ? '선택한 스테이지를 클리어했습니다. 다음 스테이지는 전체 플레이에서 해금할 수 있습니다.' : state.stageIndex === STAGE_COUNT - 1 ? '모든 궤도를 돌파했습니다.' : '다음 궤도로 진입합니다.';
+    stageCopy.textContent = state.cheatMode !== 'none'
+      ? '테스트 모드 클리어입니다. 최고 점수와 해금 기록은 저장되지 않습니다.'
+      : state.stageIndex === STAGE_COUNT - 1
+        ? '모든 궤도를 돌파했습니다.'
+        : state.runMode === 'practice'
+          ? '선택한 스테이지를 클리어했습니다. 다음 스테이지가 해금되었습니다.'
+          : '다음 궤도로 진입합니다.';
     stageScoreLine.textContent = `STAGE SCORE ${formatScore(state.stageScore)}`;
     stageTotalScoreLine.textContent = `SCORE ${formatScore(state.score)}`;
     nextStageButton.textContent = state.stageIndex === STAGE_COUNT - 1 ? 'VIEW RESULT' : state.runMode === 'run' ? 'NEXT STAGE' : 'STAGE SELECT';
@@ -680,8 +682,8 @@
     if (state.screen !== 'paused') return;
     emitAnalytics('level_end', { level_name: `stage-${String(state.stageIndex + 1).padStart(2, '0')}`, success: false });
     state.score = state.stageScoreStart;
-    state.lives = Number.isFinite(state.stageLivesStart) ? state.stageLivesStart : 3;
-    state.bombs = Number.isFinite(state.stageBombsStart) ? Math.max(0, Math.min(3, state.stageBombsStart)) : 2;
+    state.lives = RESTART_LIVES;
+    state.bombs = RESTART_BOMBS;
     state.bombCooldown = 0;
     state.shield = 0;
     resetModules();

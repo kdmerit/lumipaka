@@ -433,7 +433,7 @@
     selectedStageLabel.textContent = `STAGE ${String(state.selectedStage + 1).padStart(2, '0')} · ${config.name}`;
     setupProgress.textContent = state.testMode
       ? 'TEST MODE ACTIVE · ALL STAGES OPEN · RECORDS DISABLED'
-      : `OPEN ${Math.min(STAGE_COUNT, selectableStage + 1)}/${STAGE_COUNT} · PLAY ALL STAGES to unlock more`;
+      : `OPEN ${Math.min(STAGE_COUNT, selectableStage + 1)}/${STAGE_COUNT} · CLEAR STAGES TO UNLOCK MORE`;
     playSelectedButton.disabled = state.selectedStage > selectableStage;
   }
 
@@ -657,7 +657,7 @@
     state.items = [];
     stopAllAudio();
     playTrack(audioTracks.victory);
-    if (state.runMode === 'run' && !state.testMode) {
+    if (!state.testMode) {
       const nextStage = Math.min(STAGE_COUNT - 1, state.level);
       if (nextStage > state.progress.unlockedStage) {
         state.progress.unlockedStage = nextStage;
