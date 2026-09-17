@@ -111,7 +111,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .setting-label { color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .16em; }
 .option-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .match-row { grid-template-columns: repeat(3, 1fr); }
-.difficulty-row { grid-template-columns: repeat(3, 1fr); }
+.difficulty-row { grid-template-columns: repeat(4, 1fr); }
 .option-button, .switch-button, .secondary-button, .primary-button {
   margin: 0;
   border: 1px solid rgba(255, 255, 255, .13);
