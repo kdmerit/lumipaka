@@ -24,6 +24,7 @@
   const pauseToggle = document.querySelector('#pause-toggle');
   const pauseOverlay = document.querySelector('#pause-overlay');
   const resumeButton = document.querySelector('#resume-button');
+  const pauseExitButton = document.querySelector('#pause-exit-button');
   const soundToggle = document.querySelector('#sound-toggle');
   const powerupsElement = document.querySelector('#powerups');
   const launchPrompt = document.querySelector('#launch-prompt');
@@ -365,6 +366,14 @@
     updateLaunchPrompt();
     draw();
     emit('game-pause', { paused: state.paused });
+  }
+
+  function exitPausedGame() {
+    if (!state.active || !state.paused) return;
+    const score = Math.floor(state.score);
+    emitAnalytics('level_end', { level_name: `BRICK IMPACT ${state.level}`, success: false });
+    emitAnalytics('lumipaka_game_end', { result: 'exit', score, level: state.level });
+    showSetup();
   }
 
   function setSoundEnabled(enabled) {
@@ -1181,6 +1190,7 @@
   document.addEventListener('pointerdown', handleTestModeTap, true);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
+  pauseExitButton.addEventListener('click', exitPausedGame);
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   canvas.addEventListener('pointerdown', startPointer, { passive: false });
   canvas.addEventListener('pointermove', movePointer, { passive: false });

@@ -15,6 +15,7 @@
   const pauseToggle = document.querySelector('#pause-toggle');
   const pauseOverlay = document.querySelector('#pause-overlay');
   const resumeButton = document.querySelector('#resume-button');
+  const pauseExitButton = document.querySelector('#pause-exit-button');
   const soundToggle = document.querySelector('#sound-toggle');
 
   const audioTracks = {
@@ -175,6 +176,22 @@
     emit('game-pause', { paused: state.paused });
   }
 
+  function exitPausedGame() {
+    if (!state.active || !state.paused) return;
+    const score = Math.floor(state.score);
+    emitAnalytics('lumipaka_game_end', { result: 'exit', score });
+    state.active = false;
+    state.paused = false;
+    stopAllAudio();
+    reset();
+    overlayTitle.innerHTML = 'DODGE<br /><em>LOOP</em>';
+    overlayCopy.innerHTML = '떨어지는 블록을 피하고<br />최고 기록에 도전하세요.';
+    startButton.textContent = 'START';
+    overlay.classList.remove('hidden');
+    updatePauseToggle();
+    draw();
+  }
+
   function spawnBlock() {
     const size = 0.055 + Math.random() * 0.07;
     state.blocks.push({
@@ -279,6 +296,7 @@
   startButton.addEventListener('click', start);
   pauseToggle.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', () => { if (state.paused) togglePause(); });
+  pauseExitButton.addEventListener('click', exitPausedGame);
   soundToggle.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   canvas.addEventListener('pointerdown', (event) => {
     if (state.paused) return;

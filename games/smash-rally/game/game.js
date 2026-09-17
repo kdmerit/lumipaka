@@ -64,6 +64,7 @@
   const nextSetButton = document.querySelector('#next-set-button');
   const settingsButton = document.querySelector('#settings-button');
   const resumeButton = document.querySelector('#resume-button');
+  const pauseExitButton = document.querySelector('#pause-exit-button');
   const pauseButton = document.querySelector('#pause-toggle');
   const soundButton = document.querySelector('#sound-toggle');
   const serveButton = document.querySelector('#serve-button');
@@ -573,6 +574,25 @@
     state.frame = requestAnimationFrame(loop);
   }
 
+  function exitPausedGame() {
+    if (!state.active || !state.paused) return;
+    emitAnalytics('level_end', {
+      level_name: `SET ${state.playerMatches + state.cpuMatches + 1}`,
+      success: false
+    });
+    emitAnalytics('lumipaka_game_end', {
+      result: 'exit',
+      difficulty: state.settings.difficulty,
+      target_score: state.settings.targetScore,
+      set_count: state.settings.matches,
+      player_sets: state.playerMatches,
+      cpu_sets: state.cpuMatches,
+      player_points: state.playerPoints,
+      cpu_points: state.cpuPoints
+    });
+    openSettings();
+  }
+
   function launchPlayerServe() {
     if (!state.active || state.paused || state.phase !== 'serve-player') return;
     activateAudio();
@@ -994,6 +1014,7 @@
   }, { passive: false });
   settingsButton.addEventListener('click', openSettings);
   resumeButton.addEventListener('click', togglePause);
+  pauseExitButton.addEventListener('click', exitPausedGame);
   pauseButton.addEventListener('click', togglePause);
   serveButton.addEventListener('click', launchPlayerServe);
   soundButton.addEventListener('click', () => {

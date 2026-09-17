@@ -155,6 +155,8 @@ h1 em { color: var(--lime); font-style: normal; }
 }
 .pause-title { color: var(--lime); font-size: clamp(35px, 10vw, 52px); font-weight: 900; letter-spacing: -.05em; line-height: 1; }
 .pause-overlay .primary-button { margin-top: 0; }
+.pause-exit-button { min-width: 182px; padding: 13px 24px; color: var(--white); background: rgba(255,255,255,.055); font-size: 12px; }
+.pause-exit-button:hover { color: var(--lime-soft); background: rgba(255,255,255,.1); }
 .pause-copy { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
 .hint { margin: 12px 0 0; color: var(--muted); text-align: center; font-size: 10px; line-height: 1.5; }
 
