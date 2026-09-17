@@ -9,6 +9,7 @@
   const SETTINGS_KEY = 'stellar-rush-settings-v1';
   const MAX_MODULE_LEVEL = 2;
   const MAX_PICKUP_BONUS = 200;
+  const NEW_RUN_LIVES = 3;
   const RESTART_LIVES = 2;
   const RESTART_BOMBS = 2;
   const PICKUP_DROP_RATE = .1275;
@@ -550,8 +551,8 @@
     state.runMode = mode;
     state.score = 0;
     state.stageScore = 0;
-    state.lives = 3;
-    state.bombs = 2;
+    state.lives = mode === 'practice' ? RESTART_LIVES : NEW_RUN_LIVES;
+    state.bombs = RESTART_BOMBS;
     state.shield = 0;
     resetModules();
     state.stageIndex = mode === 'run' ? 0 : stageIndex;
