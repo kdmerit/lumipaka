@@ -92,7 +92,8 @@ h1 em { color: var(--cyan); font-style: normal; }
 #lives[data-cheat="infinite"] { font-size: 24px; line-height: 1; }
 .bomb-button, .pause-button, .sound-button { padding: 7px 10px; border-color: rgba(114,231,255,.28); color: var(--cyan); background: rgba(114,231,255,.08); }
 .pause-button { width: 106px; }
-.bomb-button:not(:disabled):hover, .pause-button:not(:disabled):hover, .sound-button:hover { color: var(--ink); background: var(--cyan); }
+.bomb-button, .bomb-status { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.bomb-button:not(:disabled):active, .pause-button:not(:disabled):active, .sound-button:active { color: var(--ink); background: var(--cyan); }
 .bomb-button:disabled, .pause-button:disabled { cursor: default; opacity: .35; }
 .sound-button[aria-pressed="false"] { border-color: rgba(255,255,255,.14); color: var(--muted); background: transparent; }
 .hint { margin: 10px 0 0; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.5; }
@@ -106,12 +107,17 @@ h1 em { color: var(--cyan); font-style: normal; }
 .bomb-status { justify-content: center; }
 .bomb-status { cursor: pointer; }
 .bomb-status:disabled { cursor: default; }
-.bomb-status:not(:disabled):hover { border-color: var(--cyan); }
+.bomb-status:not(:disabled):active { border-color: var(--cyan); }
 .bomb-status:focus-visible, .bomb-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .bomb-button { min-width: 116px; flex-shrink: 0; }
 .bomb-status .bomb-display { font-size: 16px; }
 .bomb-cooldown { margin-left: 5px; font-variant-numeric: tabular-nums; }
 .setup-actions > button { flex: 1 1 160px; max-width: 220px; }
+
+@media (hover: hover) {
+  .bomb-button:not(:disabled):hover, .pause-button:not(:disabled):hover, .sound-button:hover { color: var(--ink); background: var(--cyan); }
+  .bomb-status:not(:disabled):hover { border-color: var(--cyan); }
+}
 
 html[data-lumipaka-fullscreen="true"] body { overflow: hidden; }
 html[data-lumipaka-fullscreen="true"] .game-shell { width: 100%; max-width: none; padding: 2px 4px; }

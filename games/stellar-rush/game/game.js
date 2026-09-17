@@ -2336,6 +2336,34 @@
     if (key === 'p' || key === 'escape') togglePause();
   }
 
+  // Mobile browsers may keep a button in its hover/pressed state after a long
+  // touch and suppress the synthetic click.  Fire on pointer release and
+  // retain the click path for keyboard/programmatic activation.
+  let bombPointerHandled = false;
+  function handleBombPointerUp(event) {
+    if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    event.preventDefault();
+    bombPointerHandled = true;
+    useBomb();
+    event.currentTarget.blur();
+  }
+
+  function handleBombPointerCancel(event) {
+    bombPointerHandled = false;
+    event.currentTarget.blur();
+  }
+
+  function handleBombClick(event) {
+    if (event.detail > 0 && bombPointerHandled) {
+      event.preventDefault();
+      bombPointerHandled = false;
+      return;
+    }
+    bombPointerHandled = false;
+    useBomb();
+    event.currentTarget.blur();
+  }
+
   function loop(now) {
     const delta = Math.min(.05, Math.max(0, (now - state.lastTime) / 1000));
     state.lastTime = now;
@@ -2363,8 +2391,11 @@
   $('#pause-restart-button').addEventListener('click', restartPausedStage);
   $('#pause-exit-button').addEventListener('click', exitPausedGame);
   pauseButton.addEventListener('click', togglePause);
-  bombButton.addEventListener('click', useBomb);
-  hudBombButton.addEventListener('click', useBomb);
+  for (const button of [bombButton, hudBombButton]) {
+    button.addEventListener('pointerup', handleBombPointerUp, { passive: false });
+    button.addEventListener('pointercancel', handleBombPointerCancel, { passive: false });
+    button.addEventListener('click', handleBombClick);
+  }
   soundButton.addEventListener('click', () => {
     state.soundEnabled = !state.soundEnabled;
     saveSettings();
