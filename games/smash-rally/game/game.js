@@ -9,7 +9,7 @@
   const PADDLE_HEIGHT = 18;
   const PLAYER_Y = 882;
   const CPU_Y = 60;
-  const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720, expert: 800, hell: 900 };
+  const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720, expert: 800, hell: 960 };
   const CPU_SERVE_DELAY = 0.8;
   const HIT_SOUND_LOOKAHEAD = 0.5;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
@@ -24,14 +24,14 @@
     normal: { reaction: 0.29, speed: 260, error: 64 },
     hard: { reaction: 0.12, speed: 375, error: 22 },
     expert: { reaction: 0.08, speed: 450, error: 15 },
-    hell: { reaction: 0.05, speed: 540, error: 8 }
+    hell: { reaction: 0.04, speed: 600, error: 5 }
   };
   const BALL_PROFILES = {
     easy: { baseSpeed: BASE_SPEED, acceleration: 0.02 },
     normal: { baseSpeed: BASE_SPEED * 1.3, acceleration: 0.03 },
     hard: { baseSpeed: BASE_SPEED * 1.5, acceleration: 0.05 },
     expert: { baseSpeed: BASE_SPEED * 2, acceleration: 0.06 },
-    hell: { baseSpeed: BASE_SPEED * 2.5, acceleration: 0.08 }
+    hell: { baseSpeed: BASE_SPEED * 2.75, acceleration: 0.09 }
   };
 
   const canvas = document.querySelector('#game');
