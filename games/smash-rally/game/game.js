@@ -11,6 +11,8 @@
   const CPU_Y = 60;
   const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720, expert: 800, hell: 960 };
   const CPU_SERVE_DELAY = 0.8;
+  const HIT_SOUND_LEAD_SECONDS = 0.02;
+  const HIT_SOUND_SCHEDULE_WINDOW_SECONDS = 0.06;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
   const SETTINGS_STORAGE_KEY = 'smash-rally-settings';
   const DEFAULT_SETTINGS = Object.freeze({ targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' });
@@ -111,6 +113,7 @@
     cheerLoading: null,
     cheerDecoding: null,
     cheerSource: null,
+    pendingHit: null,
     outputWarmed: false,
     activeSources: new Set()
   };
@@ -413,6 +416,7 @@
   }
 
   function stopActiveSounds() {
+    cancelPendingHitSound();
     audio.cheerSource = null;
     for (const source of audio.activeSources) {
       try {
@@ -424,7 +428,7 @@
     audio.activeSources.clear();
   }
 
-  function playHitSound() {
+  function createHitSoundSource(delay = 0) {
     if (!state.soundEnabled || !audio.context || !audio.hitBuffer || audio.context.state !== 'running') return false;
     try {
       const source = audio.context.createBufferSource();
@@ -432,13 +436,32 @@
       source.buffer = audio.hitBuffer;
       gain.gain.value = 0.18;
       source.connect(gain).connect(audio.context.destination);
-      source.onended = () => audio.activeSources.delete(source);
+      source.onended = () => {
+        audio.activeSources.delete(source);
+        if (audio.pendingHit?.source === source) audio.pendingHit = null;
+      };
       audio.activeSources.add(source);
-      source.start();
-      return true;
+      source.start(audio.context.currentTime + Math.max(0, delay));
+      return source;
     } catch {
       // A transient audio failure does not affect the game loop.
-      return false;
+      return null;
+    }
+  }
+
+  function playHitSound() {
+    return Boolean(createHitSoundSource());
+  }
+
+  function cancelPendingHitSound() {
+    const pending = audio.pendingHit;
+    if (!pending) return;
+    audio.pendingHit = null;
+    audio.activeSources.delete(pending.source);
+    try {
+      pending.source.stop();
+    } catch {
+      // The source may already have finished.
     }
   }
 
@@ -539,6 +562,7 @@
     updateHud();
 
     if (state.paused) {
+      cancelPendingHitSound();
       audio.outputWarmed = false;
       if (audio.context) audio.context.suspend().catch(() => {});
       return;
@@ -726,6 +750,8 @@
   }
 
   function returnBall(paddle, hitter) {
+    const usedPendingHitSound = audio.pendingHit?.hitter === hitter;
+    if (usedPendingHitSound) audio.pendingHit = null;
     const offset = clamp((state.ball.x - paddle.x) / (paddle.width / 2), -1, 1);
     const angle = offset * 1.02;
     const speed = Math.max(getBallProfile().baseSpeed, getBallSpeed());
@@ -743,8 +769,36 @@
       state.exchangePairs += 1;
       setBallSpeed(targetSpeed());
     }
-    playHitSound();
+    if (!usedPendingHitSound) playHitSound();
     updateHud();
+  }
+
+  function projectedPaddleContact() {
+    if (state.ball.vy === 0) return null;
+    const hitter = state.ball.vy < 0 ? 'cpu' : 'player';
+    const paddle = hitter === 'cpu' ? state.cpu : state.player;
+    const contactY = hitter === 'cpu'
+      ? paddle.y + paddle.height + state.ball.radius
+      : paddle.y - state.ball.radius;
+    const timeToContact = (contactY - state.ball.y) / state.ball.vy;
+    if (timeToContact <= 0) return null;
+
+    const projectedX = reflectedBallXAt(timeToContact);
+    const left = paddle.x - paddle.width / 2 - state.ball.radius;
+    const right = paddle.x + paddle.width / 2 + state.ball.radius;
+    if (projectedX < left || projectedX > right) return null;
+    return { hitter, timeToContact };
+  }
+
+  function scheduleNearContactHitSound() {
+    const contact = projectedPaddleContact();
+    const pending = audio.pendingHit;
+    if (pending && (!contact || pending.hitter !== contact.hitter)) cancelPendingHitSound();
+    if (!contact || audio.pendingHit) return;
+    if (contact.timeToContact <= HIT_SOUND_LEAD_SECONDS || contact.timeToContact > HIT_SOUND_SCHEDULE_WINDOW_SECONDS) return;
+
+    const source = createHitSoundSource(contact.timeToContact - HIT_SOUND_LEAD_SECONDS);
+    if (source) audio.pendingHit = { source, hitter: contact.hitter };
   }
 
   function updateServe(delta) {
@@ -766,6 +820,7 @@
 
     for (let step = 0; step < steps; step += 1) {
       updateCpu(stepDelta);
+      scheduleNearContactHitSound();
       state.ball.x += state.ball.vx * stepDelta;
       state.ball.y += state.ball.vy * stepDelta;
 
