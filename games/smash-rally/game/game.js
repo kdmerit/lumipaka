@@ -11,7 +11,6 @@
   const CPU_Y = 60;
   const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720, expert: 800, hell: 960 };
   const CPU_SERVE_DELAY = 0.8;
-  const HIT_SOUND_LOOKAHEAD = 0.5;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
   const SETTINGS_STORAGE_KEY = 'smash-rally-settings';
   const DEFAULT_SETTINGS = Object.freeze({ targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' });
@@ -96,8 +95,6 @@
     aiReactionTimer: 0,
     rallyReturns: 0,
     exchangePairs: 0,
-    elapsed: 0,
-    hitSoundPrimedUntil: 0,
     lastTime: 0,
     frame: 0,
     soundEnabled: readSoundPreference()
@@ -227,7 +224,6 @@
     resetPaddles();
     state.rallyReturns = 0;
     state.exchangePairs = 0;
-    state.hitSoundPrimedUntil = 0;
     state.pointerX = null;
     state.serveTimer = server === 'cpu' ? CPU_SERVE_DELAY : 0;
     state.phase = server === 'cpu' ? 'serve-cpu' : 'serve-player';
@@ -303,23 +299,6 @@
       }
     }
     return audio.context;
-  }
-
-  function getScheduledAudioTime(audioContext, delay = 0) {
-    const safeDelay = Math.max(0, Number(delay) || 0);
-    try {
-      if (typeof audioContext.getOutputTimestamp === 'function') {
-        const timestamp = audioContext.getOutputTimestamp();
-        if (Number.isFinite(timestamp.contextTime) && Number.isFinite(timestamp.performanceTime)) {
-          const targetPerformanceTime = performance.now() + safeDelay * 1000;
-          const targetContextTime = timestamp.contextTime + (targetPerformanceTime - timestamp.performanceTime) / 1000;
-          if (Number.isFinite(targetContextTime) && targetContextTime >= audioContext.currentTime) return targetContextTime;
-        }
-      }
-    } catch {
-      // Output timestamp support varies between browsers and embedded WebViews.
-    }
-    return audioContext.currentTime + safeDelay;
   }
 
   function decodeHitSound() {
@@ -445,7 +424,7 @@
     audio.activeSources.clear();
   }
 
-  function playHitSound(delay = 0) {
+  function playHitSound() {
     if (!state.soundEnabled || !audio.context || !audio.hitBuffer || audio.context.state !== 'running') return false;
     try {
       const source = audio.context.createBufferSource();
@@ -455,7 +434,7 @@
       source.connect(gain).connect(audio.context.destination);
       source.onended = () => audio.activeSources.delete(source);
       audio.activeSources.add(source);
-      source.start(getScheduledAudioTime(audio.context, delay));
+      source.start();
       return true;
     } catch {
       // A transient audio failure does not affect the game loop.
@@ -509,8 +488,6 @@
     state.cpuMatches = 0;
     state.playerPoints = 0;
     state.cpuPoints = 0;
-    state.elapsed = 0;
-    state.hitSoundPrimedUntil = 0;
     state.keys.left = false;
     state.keys.right = false;
     setupOverlay.hidden = true;
@@ -541,8 +518,6 @@
     state.cpuMatches = 0;
     state.playerPoints = 0;
     state.cpuPoints = 0;
-    state.elapsed = 0;
-    state.hitSoundPrimedUntil = 0;
     stopActiveSounds();
     resetPaddles();
     state.ball.x = WIDTH / 2;
@@ -751,8 +726,6 @@
   }
 
   function returnBall(paddle, hitter) {
-    const usedPrimedSound = state.hitSoundPrimedUntil > state.elapsed;
-    state.hitSoundPrimedUntil = 0;
     const offset = clamp((state.ball.x - paddle.x) / (paddle.width / 2), -1, 1);
     const angle = offset * 1.02;
     const speed = Math.max(getBallProfile().baseSpeed, getBallSpeed());
@@ -770,30 +743,8 @@
       state.exchangePairs += 1;
       setBallSpeed(targetSpeed());
     }
-    if (!usedPrimedSound) playHitSound();
+    playHitSound();
     updateHud();
-  }
-
-  function primeApproachingHitSound() {
-    if (state.hitSoundPrimedUntil > state.elapsed || state.ball.vy === 0) return;
-
-    const paddle = state.ball.vy < 0 ? state.cpu : state.player;
-    const contactY = state.ball.vy < 0
-      ? paddle.y + paddle.height + state.ball.radius
-      : paddle.y - state.ball.radius;
-    const timeToContact = (contactY - state.ball.y) / state.ball.vy;
-    if (timeToContact < 0 || timeToContact > HIT_SOUND_LOOKAHEAD) return;
-
-    const projectedX = reflectedBallXAt(timeToContact);
-    const paddleSpeed = state.ball.vy < 0
-      ? AI_PROFILES[state.settings.difficulty].speed
-      : getPlayerSpeed();
-    const movementMargin = Math.min(96, paddleSpeed * timeToContact * 0.5);
-    const left = paddle.x - paddle.width / 2 - state.ball.radius - movementMargin;
-    const right = paddle.x + paddle.width / 2 + state.ball.radius + movementMargin;
-    if (projectedX < left || projectedX > right) return;
-
-    if (playHitSound(timeToContact)) state.hitSoundPrimedUntil = state.elapsed + timeToContact + 0.12;
   }
 
   function updateServe(delta) {
@@ -815,7 +766,6 @@
 
     for (let step = 0; step < steps; step += 1) {
       updateCpu(stepDelta);
-      primeApproachingHitSound();
       state.ball.x += state.ball.vx * stepDelta;
       state.ball.y += state.ball.vy * stepDelta;
 
@@ -845,7 +795,6 @@
   }
 
   function update(delta) {
-    state.elapsed += delta;
     updatePlayer(delta);
     if (state.phase === 'serve-player' || state.phase === 'serve-cpu') {
       updateServe(delta);
