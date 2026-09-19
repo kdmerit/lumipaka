@@ -11,8 +11,10 @@
   const CPU_Y = 60;
   const PLAYER_SPEEDS = { easy: 560, normal: 640, hard: 720, expert: 800, hell: 960 };
   const CPU_SERVE_DELAY = 0.8;
-  const HIT_SOUND_LEAD_SECONDS = 0.02;
-  const HIT_SOUND_SCHEDULE_WINDOW_SECONDS = 0.06;
+  // Compensate for the small output buffer delay that is still noticeable on
+  // mobile Chrome. The contact prediction remains exact and cancellable.
+  const HIT_SOUND_LEAD_SECONDS = 0.04;
+  const HIT_SOUND_SCHEDULE_WINDOW_SECONDS = 0.1;
   const SOUND_STORAGE_KEY = 'smash-rally-sound';
   const SETTINGS_STORAGE_KEY = 'smash-rally-settings';
   const DEFAULT_SETTINGS = Object.freeze({ targetScore: 5, matches: 1, deuce: true, difficulty: 'normal' });
