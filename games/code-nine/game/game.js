@@ -2,6 +2,8 @@
   'use strict';
 
   const RECORDS_KEY = 'code-nine-records-v1';
+  const SOUND_STORAGE_KEY = 'code-nine-sound';
+  const SOUND_URL = './audio/01-click-shimmer.wav';
   const BLITZ_TIME_MS = 100000;
   const MODES = Object.freeze({
     classic: Object.freeze({
@@ -48,6 +50,7 @@
   const feedback = $('#feedback');
   const digitButtons = [...document.querySelectorAll('[data-digit]')];
   const actionButtons = [...document.querySelectorAll('[data-action]')];
+  const soundButton = $('#sound-button');
   const historyCount = $('#history-count');
   const historyEmpty = $('#history-empty');
   const historyTableWrap = $('#history-table-wrap');
@@ -65,6 +68,13 @@
   const againButton = $('#again-button');
   const menuButton = $('#menu-button');
 
+  const audio = {
+    context: null,
+    buffer: null,
+    loading: null,
+    activeSources: new Set()
+  };
+
   const state = {
     selectedMode: 'classic',
     mode: null,
@@ -78,6 +88,7 @@
     remainingMs: null,
     frameId: null,
     result: null,
+    soundEnabled: readSoundPreference(),
     records: readRecords()
   };
 
@@ -120,6 +131,98 @@
     } catch {
       // Keep the current session playable when storage is unavailable.
     }
+  }
+
+  function readSoundPreference() {
+    try {
+      return window.localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  }
+
+  function getAudioContext() {
+    if (audio.context) return audio.context;
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextConstructor) return null;
+    try {
+      audio.context = new AudioContextConstructor({ latencyHint: 'interactive' });
+    } catch {
+      try { audio.context = new AudioContextConstructor(); } catch { return null; }
+    }
+    return audio.context;
+  }
+
+  function loadClickSound() {
+    const context = getAudioContext();
+    if (!context) return Promise.resolve(null);
+    if (audio.buffer) return Promise.resolve(audio.buffer);
+    if (audio.loading) return audio.loading;
+    audio.loading = fetch(SOUND_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not load CODE NINE click sound.');
+        return response.arrayBuffer();
+      })
+      .then((data) => context.decodeAudioData(data))
+      .then((buffer) => {
+        audio.buffer = buffer;
+        return buffer;
+      })
+      .catch(() => null)
+      .finally(() => { audio.loading = null; });
+    return audio.loading;
+  }
+
+  function activateAudio() {
+    if (!state.soundEnabled) return;
+    const context = getAudioContext();
+    if (!context) return;
+    if (context.state === 'suspended') context.resume().catch(() => {});
+    loadClickSound();
+  }
+
+  function stopAudio() {
+    for (const source of audio.activeSources) {
+      try { source.stop(); } catch { /* The source may already have ended. */ }
+    }
+    audio.activeSources.clear();
+  }
+
+  function playDigitSound() {
+    if (!state.soundEnabled) return;
+    const context = getAudioContext();
+    if (!context) return;
+    const play = (buffer) => {
+      if (!buffer || !state.soundEnabled) return;
+      const start = () => {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        source.buffer = buffer;
+        gain.gain.value = 0.42;
+        source.connect(gain).connect(context.destination);
+        audio.activeSources.add(source);
+        source.addEventListener('ended', () => audio.activeSources.delete(source), { once: true });
+        try { source.start(); } catch { audio.activeSources.delete(source); }
+      };
+      if (context.state === 'suspended') context.resume().then(start).catch(() => {});
+      else start();
+    };
+    if (audio.buffer) play(audio.buffer);
+    else loadClickSound().then(play);
+  }
+
+  function updateSoundButton() {
+    soundButton.textContent = state.soundEnabled ? 'SOUND ON' : 'SOUND OFF';
+    soundButton.setAttribute('aria-pressed', String(state.soundEnabled));
+    soundButton.setAttribute('aria-label', state.soundEnabled ? '게임 사운드 끄기' : '게임 사운드 켜기');
+  }
+
+  function setSoundEnabled(enabled) {
+    state.soundEnabled = enabled;
+    try { window.localStorage.setItem(SOUND_STORAGE_KEY, enabled ? 'on' : 'off'); } catch { /* Keep the session playable. */ }
+    updateSoundButton();
+    if (enabled) activateAudio();
+    else stopAudio();
   }
 
   function getModeConfig() {
@@ -317,6 +420,8 @@
 
   function startGame() {
     stopFrame();
+    stopAudio();
+    activateAudio();
     const config = MODES[state.selectedMode];
     state.mode = config.key;
     state.screen = 'playing';
@@ -353,6 +458,7 @@
       return;
     }
     state.currentGuess.push(digit);
+    playDigitSound();
     setFeedback('입력이 준비되면 ENTER를 누르세요.');
     renderPlayingState();
   }
@@ -522,6 +628,7 @@
 
   function returnToMenu() {
     stopFrame();
+    stopAudio();
     state.screen = 'menu';
     state.mode = null;
     state.currentGuess = [];
@@ -556,6 +663,7 @@
 
   startButton.addEventListener('click', startGame);
   pauseButton.addEventListener('click', () => pauseGame());
+  soundButton.addEventListener('click', () => setSoundEnabled(!state.soundEnabled));
   resumeButton.addEventListener('click', resumeGame);
   pauseExitButton.addEventListener('click', abandonRound);
   againButton.addEventListener('click', startGame);
@@ -603,4 +711,5 @@
 
   renderModeSelection();
   renderGuessDisplay();
+  updateSoundButton();
 })();
