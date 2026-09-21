@@ -730,8 +730,26 @@
     });
   });
 
+  const pointerActivatedDigits = new WeakSet();
+
   digitButtons.forEach((button) => {
-    button.addEventListener('click', () => addDigit(Number(button.dataset.digit)));
+    button.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      pointerActivatedDigits.add(button);
+      event.preventDefault();
+      addDigit(Number(button.dataset.digit));
+    });
+
+    button.addEventListener('pointerup', () => {
+      window.setTimeout(() => pointerActivatedDigits.delete(button), 0);
+    });
+
+    button.addEventListener('pointercancel', () => pointerActivatedDigits.delete(button));
+
+    button.addEventListener('click', () => {
+      if (pointerActivatedDigits.delete(button)) return;
+      addDigit(Number(button.dataset.digit));
+    });
   });
 
   actionButtons.forEach((button) => {
