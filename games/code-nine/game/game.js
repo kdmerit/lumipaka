@@ -70,8 +70,11 @@
 
   const audio = {
     context: null,
+    rawData: null,
     buffer: null,
     loading: null,
+    decoding: null,
+    outputWarmed: false,
     activeSources: new Set()
   };
 
@@ -153,32 +156,79 @@
     return audio.context;
   }
 
+  function decodeClickSound() {
+    const context = audio.context;
+    if (!context || !audio.rawData || audio.buffer || audio.decoding) return;
+
+    audio.decoding = context.decodeAudioData(audio.rawData.slice(0))
+      .then((decoded) => {
+        audio.buffer = decoded;
+        warmAudioOutput();
+      })
+      .catch(() => {
+        audio.buffer = null;
+      })
+      .finally(() => {
+        audio.decoding = null;
+      });
+  }
+
   function loadClickSound() {
-    const context = getAudioContext();
-    if (!context) return Promise.resolve(null);
-    if (audio.buffer) return Promise.resolve(audio.buffer);
-    if (audio.loading) return audio.loading;
+    if (audio.rawData || audio.loading) return;
+
     audio.loading = fetch(SOUND_URL)
       .then((response) => {
         if (!response.ok) throw new Error('Could not load CODE NINE click sound.');
         return response.arrayBuffer();
       })
-      .then((data) => context.decodeAudioData(data))
-      .then((buffer) => {
-        audio.buffer = buffer;
-        return buffer;
+      .then((rawData) => {
+        audio.rawData = rawData;
       })
-      .catch(() => null)
-      .finally(() => { audio.loading = null; });
-    return audio.loading;
+      .catch(() => {
+        audio.rawData = null;
+      })
+      .finally(() => {
+        audio.loading = null;
+        decodeClickSound();
+      });
+  }
+
+  function warmAudioOutput() {
+    const context = audio.context;
+    if (!state.soundEnabled || audio.outputWarmed || !context || !audio.buffer || context.state !== 'running') return;
+
+    try {
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = audio.buffer;
+      gain.gain.value = 0;
+      source.connect(gain).connect(context.destination);
+      source.start();
+      source.stop(context.currentTime + 0.01);
+      audio.outputWarmed = true;
+    } catch {
+      // The silent warm-up is optional and must not affect the game.
+    }
   }
 
   function activateAudio() {
     if (!state.soundEnabled) return;
-    const context = getAudioContext();
-    if (!context) return;
-    if (context.state === 'suspended') context.resume().catch(() => {});
-    loadClickSound();
+
+    try {
+      const context = getAudioContext();
+      if (!context) return;
+
+      const prepareAudio = () => {
+        decodeClickSound();
+        warmAudioOutput();
+      };
+
+      loadClickSound();
+      if (context.state === 'running') prepareAudio();
+      else context.resume().then(prepareAudio).catch(() => {});
+    } catch {
+      // Sound must never prevent play when Web Audio is unavailable.
+    }
   }
 
   function stopAudio() {
@@ -229,10 +279,9 @@
     if (!state.soundEnabled) return;
     const context = getAudioContext();
     if (!context) return;
-    if (audio.buffer) {
-      const wasSuspended = context.state === 'suspended';
+    decodeClickSound();
+    if (audio.buffer && context.state === 'running') {
       startBufferSource(context, audio.buffer);
-      if (wasSuspended) context.resume().catch(() => {});
       return;
     }
     // Never wait for a network/decode promise on the input path.
@@ -251,7 +300,10 @@
     try { window.localStorage.setItem(SOUND_STORAGE_KEY, enabled ? 'on' : 'off'); } catch { /* Keep the session playable. */ }
     updateSoundButton();
     if (enabled) activateAudio();
-    else stopAudio();
+    else {
+      stopAudio();
+      audio.outputWarmed = false;
+    }
   }
 
   function getModeConfig() {
