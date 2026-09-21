@@ -219,8 +219,10 @@
         oscillator.stop(now + 0.06);
       } catch { audio.activeSources.delete(oscillator); }
     };
-    if (context.state === 'suspended') context.resume().then(start).catch(() => {});
-    else start();
+    // Schedule the source before resuming. Waiting on resume() here adds an
+    // audible gap on mobile browsers during the first interaction.
+    start();
+    if (context.state === 'suspended') context.resume().catch(() => {});
   }
 
   function playDigitSound() {
@@ -228,8 +230,9 @@
     const context = getAudioContext();
     if (!context) return;
     if (audio.buffer) {
-      if (context.state === 'suspended') context.resume().then(() => startBufferSource(context, audio.buffer)).catch(() => {});
-      else startBufferSource(context, audio.buffer);
+      const wasSuspended = context.state === 'suspended';
+      startBufferSource(context, audio.buffer);
+      if (wasSuspended) context.resume().catch(() => {});
       return;
     }
     // Never wait for a network/decode promise on the input path.
