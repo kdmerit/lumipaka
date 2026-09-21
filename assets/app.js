@@ -26,7 +26,12 @@ const GAME_ANALYTICS_PARAMETERS = new Set([
   'score',
   'set_count',
   'success',
-  'target_score'
+  'target_score',
+  'mode',
+  'digits',
+  'attempts',
+  'duration_seconds',
+  'remaining_seconds'
 ]);
 
 function sendGameAnalyticsEvent(game, payload) {

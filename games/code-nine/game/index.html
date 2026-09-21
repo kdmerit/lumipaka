@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>CODE NINE</title>
+    <link rel="stylesheet" href="./game.css?v=2026-09-21T05%3A16%3A52.149Z" />
+  </head>
+  <body>
+    <main class="game-shell" data-lumipaka-size-root>
+      <header class="game-header">
+        <div>
+          <div class="eyebrow">NUMBER LOGIC</div>
+          <h1>CODE <em>NINE</em></h1>
+        </div>
+        <div class="header-mark" aria-hidden="true"><span>9</span></div>
+      </header>
+
+      <section class="screen menu-screen" id="menu-screen" aria-labelledby="menu-title">
+        <div class="eyebrow">BREAK THE CODE</div>
+        <h2 id="menu-title">숫자의 위치를<br /><em>읽어내세요</em></h2>
+        <p class="screen-copy">STRIKE와 BALL 단서를 조합해 숨겨진 코드를 해독하세요.</p>
+
+        <div class="mode-grid" role="group" aria-label="게임 모드 선택">
+          <button class="mode-button is-selected" type="button" data-mode="classic" aria-pressed="true">
+            <span class="mode-name">CLASSIC</span>
+            <span class="mode-detail">3 DIGITS · 10 GUESSES</span>
+          </button>
+          <button class="mode-button" type="button" data-mode="blitz" aria-pressed="false">
+            <span class="mode-name">BLITZ</span>
+            <span class="mode-detail">3 DIGITS · 100 SEC</span>
+          </button>
+          <button class="mode-button" type="button" data-mode="hard" aria-pressed="false">
+            <span class="mode-name">HARD</span>
+            <span class="mode-detail">4 DIGITS · 10 GUESSES</span>
+          </button>
+        </div>
+
+        <div class="mode-summary" id="mode-summary" aria-live="polite"></div>
+        <button class="primary-button start-button" type="button" id="start-button">START GAME <span aria-hidden="true">→</span></button>
+        <p class="rule-note">1–9 숫자만 사용 · 같은 숫자 반복 불가</p>
+      </section>
+
+      <section class="screen play-screen" id="play-screen" aria-labelledby="play-title" hidden>
+        <div class="play-topline">
+          <div>
+            <div class="eyebrow" id="play-mode-label">CLASSIC</div>
+            <h2 id="play-title">CODE INPUT</h2>
+          </div>
+          <div class="status-cluster">
+            <div class="status-card" id="attempt-status-card">
+              <span class="status-label">GUESSES</span>
+              <strong id="attempt-status">0 / 10</strong>
+            </div>
+            <div class="status-card timer-card" id="timer-card" hidden>
+              <span class="status-label">TIME</span>
+              <strong id="timer-status">100.0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-card">
+          <div class="input-label">CURRENT CODE</div>
+          <div class="guess-display" id="guess-display" aria-live="polite" aria-label="현재 입력 코드"></div>
+          <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="keypad" role="group" aria-label="숫자 입력판">
+          <button class="digit-button" type="button" data-digit="1">1</button>
+          <button class="digit-button" type="button" data-digit="2">2</button>
+          <button class="digit-button" type="button" data-digit="3">3</button>
+          <button class="digit-button" type="button" data-digit="4">4</button>
+          <button class="digit-button" type="button" data-digit="5">5</button>
+          <button class="digit-button" type="button" data-digit="6">6</button>
+          <button class="digit-button" type="button" data-digit="7">7</button>
+          <button class="digit-button" type="button" data-digit="8">8</button>
+          <button class="digit-button" type="button" data-digit="9">9</button>
+        </div>
+        <div class="keypad-actions">
+          <button class="control-button" type="button" data-action="clear">CLEAR</button>
+          <button class="control-button" type="button" data-action="backspace" aria-label="마지막 숫자 지우기">⌫</button>
+          <button class="control-button submit-button" type="button" data-action="submit">ENTER</button>
+        </div>
+
+        <section class="history-card" aria-labelledby="history-title">
+          <div class="section-heading">
+            <div class="eyebrow" id="history-title">GUESS LOG</div>
+            <span class="history-count" id="history-count">0</span>
+          </div>
+          <div class="history-empty" id="history-empty">아직 입력한 코드가 없습니다.</div>
+          <div class="history-table-wrap" id="history-table-wrap" hidden>
+            <table class="history-table">
+              <thead>
+                <tr><th scope="col">#</th><th scope="col">CODE</th><th scope="col">RESULT</th></tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="game-actions">
+          <button class="ghost-button pause-button" type="button" id="pause-button">PAUSE</button>
+        </div>
+      </section>
+
+      <section class="overlay" id="pause-overlay" aria-labelledby="pause-title" hidden>
+        <div class="overlay-card">
+          <div class="eyebrow">ROUND PAUSED</div>
+          <h2 id="pause-title">PAUSED</h2>
+          <p id="pause-copy">잠시 쉬었다가 코드를 계속 해독하세요.</p>
+          <div class="overlay-actions">
+            <button class="primary-button" type="button" id="resume-button">RESUME</button>
+            <button class="ghost-button" type="button" id="pause-exit-button">EXIT</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="overlay" id="result-overlay" aria-labelledby="result-title" hidden>
+        <div class="overlay-card">
+          <div class="eyebrow" id="result-eyebrow">CODE CRACKED</div>
+          <h2 id="result-title">YOU WIN</h2>
+          <p class="result-secret-label">SECRET CODE</p>
+          <strong class="result-secret" id="result-secret">123</strong>
+          <p id="result-copy">정답을 찾아냈습니다.</p>
+          <div class="result-stats" id="result-stats"></div>
+          <p class="record-copy" id="record-copy"></p>
+          <div class="overlay-actions">
+            <button class="primary-button" type="button" id="again-button">PLAY AGAIN</button>
+            <button class="ghost-button" type="button" id="menu-button">MODE SELECT</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./game.js?v=2026-09-21T05%3A16%3A52.149Z" defer></script>
+    <script src="../../../assets/game-frame-bridge.js?v=2026-09-21T05%3A16%3A52.149Z"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">CODE NINE thumbnail</title>
+  <desc id="desc">A dark number-code grid with a green nine and strike indicators.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c2a46"/>
+      <stop offset="1" stop-color="#0b1121"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="760" rx="52" fill="url(#bg)"/>
+  <g fill="none" stroke="#b8f36b" stroke-opacity=".18">
+    <path d="M72 132h1056M72 628h1056M146 72v616M1054 72v616" stroke-width="2"/>
+    <circle cx="600" cy="380" r="250" stroke-width="3"/>
+    <circle cx="600" cy="380" r="188" stroke="#9c82ff" stroke-opacity=".25" stroke-width="2"/>
+  </g>
+  <g transform="translate(250 180)">
+    <rect width="700" height="400" rx="26" fill="#111a31" stroke="#b8f36b" stroke-opacity=".42" stroke-width="4"/>
+    <g fill="#1b2742" stroke="#ffffff" stroke-opacity=".14" stroke-width="3">
+      <rect x="38" y="38" width="188" height="140" rx="18"/><rect x="256" y="38" width="188" height="140" rx="18"/><rect x="474" y="38" width="188" height="140" rx="18"/>
+      <rect x="38" y="222" width="188" height="140" rx="18"/><rect x="256" y="222" width="188" height="140" rx="18"/><rect x="474" y="222" width="188" height="140" rx="18"/>
+    </g>
+    <g font-family="Inter,Segoe UI,sans-serif" font-size="92" font-weight="800" text-anchor="middle">
+      <text x="132" y="140" fill="#9aa7c2">4</text><text x="350" y="140" fill="#ffffff">7</text><text x="568" y="140" fill="#9c82ff">2</text>
+      <text x="132" y="324" fill="#b8f36b" filter="url(#glow)">9</text><text x="350" y="324" fill="#9aa7c2">1</text><text x="568" y="324" fill="#b8f36b">3</text>
+    </g>
+  </g>
+  <g font-family="Inter,Segoe UI,sans-serif" font-weight="900" letter-spacing="12">
+    <text x="84" y="104" fill="#b8f36b" font-size="22">NUMBER LOGIC</text>
+    <text x="84" y="704" fill="#ffffff" font-size="58">CODE NINE</text>
+    <text x="1116" y="704" text-anchor="end" fill="#9c82ff" font-size="20">S · B · O</text>
+  </g>
+</svg>
