@@ -188,27 +188,53 @@
     audio.activeSources.clear();
   }
 
+  function startBufferSource(context, buffer) {
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    gain.gain.value = 0.42;
+    source.connect(gain).connect(context.destination);
+    audio.activeSources.add(source);
+    source.addEventListener('ended', () => audio.activeSources.delete(source), { once: true });
+    try { source.start(context.currentTime); } catch { audio.activeSources.delete(source); }
+  }
+
+  function playImmediateFallback(context) {
+    const start = () => {
+      if (!state.soundEnabled) return;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const now = context.currentTime;
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(2800, now);
+      oscillator.frequency.exponentialRampToValueAtTime(760, now + 0.045);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.00025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+      oscillator.connect(gain).connect(context.destination);
+      audio.activeSources.add(oscillator);
+      oscillator.addEventListener('ended', () => audio.activeSources.delete(oscillator), { once: true });
+      try {
+        oscillator.start(now);
+        oscillator.stop(now + 0.06);
+      } catch { audio.activeSources.delete(oscillator); }
+    };
+    if (context.state === 'suspended') context.resume().then(start).catch(() => {});
+    else start();
+  }
+
   function playDigitSound() {
     if (!state.soundEnabled) return;
     const context = getAudioContext();
     if (!context) return;
-    const play = (buffer) => {
-      if (!buffer || !state.soundEnabled) return;
-      const start = () => {
-        const source = context.createBufferSource();
-        const gain = context.createGain();
-        source.buffer = buffer;
-        gain.gain.value = 0.42;
-        source.connect(gain).connect(context.destination);
-        audio.activeSources.add(source);
-        source.addEventListener('ended', () => audio.activeSources.delete(source), { once: true });
-        try { source.start(); } catch { audio.activeSources.delete(source); }
-      };
-      if (context.state === 'suspended') context.resume().then(start).catch(() => {});
-      else start();
-    };
-    if (audio.buffer) play(audio.buffer);
-    else loadClickSound().then(play);
+    if (audio.buffer) {
+      if (context.state === 'suspended') context.resume().then(() => startBufferSource(context, audio.buffer)).catch(() => {});
+      else startBufferSource(context, audio.buffer);
+      return;
+    }
+    // Never wait for a network/decode promise on the input path.
+    playImmediateFallback(context);
+    loadClickSound();
   }
 
   function updateSoundButton() {
@@ -712,4 +738,5 @@
   renderModeSelection();
   renderGuessDisplay();
   updateSoundButton();
+  if (state.soundEnabled) loadClickSound();
 })();
